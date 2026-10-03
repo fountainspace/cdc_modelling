@@ -25,10 +25,10 @@ cdc_marketing:
 
     ci: &ci_service_account
       <<: *base_auth
-      catalog: 
+      catalog: ci_development
       schema: "{{ env_var('DEV_SCHEMA') }}"
       host: dbc-0196bfaf-1e17.cloud.databricks.com
-      http_path: 
+      http_path:  "{{ env_var('DEV_HTTP_PATH') }}"
 
     staging: &staging_service_account
       <<: *ci_service_account

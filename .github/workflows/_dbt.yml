@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DBT_TARGET: ${{ inputs.dbt-target }}
-      DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
       DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
       DBX_SECRET: ${{ secrets.DBX_SECRET }}
     steps:
@@ -35,6 +34,8 @@ jobs:
 
       - name: Activate uv
         uses: ./.github/actions/setup_uv
+        with:
+          working-directory: cdc_marketing
 
       - name: CI/CD
         uses: ./.github/actions/dbt_ci_cd

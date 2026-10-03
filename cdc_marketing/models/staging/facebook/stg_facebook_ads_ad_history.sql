@@ -5,6 +5,7 @@
 WITH source_data AS (
 
     SELECT * FROM {{ source('facebook_ads', 'ads') }}
+    {{ add_rows_limit() }}
 
 ),
 

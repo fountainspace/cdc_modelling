@@ -6,3 +6,9 @@ dependencies = [
     "dbt-databricks>=1.12.5",
     "elementary-data[databricks]>=0.26,<0.27",
 ]
+
+[dependency-groups]
+dev = [
+    "diff-cover>=10.6.0",
+    "sqlfluff>=4.4.0",
+]

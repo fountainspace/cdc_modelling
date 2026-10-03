@@ -93,7 +93,7 @@ formatted AS (
         ad_group_id,
         campaign_id,
         account_id,
-        
+
         -- Details
         ad_name,
         ad_group_name,

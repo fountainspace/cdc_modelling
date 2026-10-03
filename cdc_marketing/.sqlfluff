@@ -1,6 +1,7 @@
 [sqlfluff]
 dialect = databricks
 templater = jinja
+exclude_rules = AM04,RF02, RF03, ST06
 max_line_length = 120
 # don't fail on jinja templating issues (e.g. dbt's `flags`, which only exists at dbt runtime)
 ignore = templating

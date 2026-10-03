@@ -2,6 +2,7 @@
 WITH source_data AS (
 
     SELECT * FROM  {{ source('facebook_ads', 'accounts') }}
+    {{ add_rows_limit() }} 
     
 
 

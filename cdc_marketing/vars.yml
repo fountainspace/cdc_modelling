@@ -5,3 +5,5 @@ vars:
     model_types: ["staging", "intermediate", "marts"]
     marts_prefixes: ["fct_", "dim_"] 
     exclude_packages: ["elementary"]
+    
+  dev_limit: true

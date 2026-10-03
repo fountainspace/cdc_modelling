@@ -11,6 +11,7 @@
 WITH source_data AS (
 
     SELECT * FROM {{ source('facebook_ads', 'ads_stats') }}
+    {{ add_rows_limit() }} 
 
 ),
 

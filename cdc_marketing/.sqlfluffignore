@@ -1,5 +1,6 @@
-target/
-dbt_packages/
-logs/
-edr_target/
-target_prod/
+*target/
+*dbt_modules/
+*dbt_packages/
+*macros/
+*tests/
+*analyses/

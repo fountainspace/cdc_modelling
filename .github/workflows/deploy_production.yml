@@ -6,7 +6,6 @@ on:
       - main
 
 permissions:
-  id-token: write
   contents: read
   actions: read
 
@@ -17,5 +16,6 @@ concurrency:
 jobs:
   deploy:
     uses: ./.github/workflows/_dbt.yml
+    secrets: inherit
     with:
       dbt-target: production

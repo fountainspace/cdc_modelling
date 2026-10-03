@@ -14,9 +14,6 @@ on:
         default: false
 
 env:
-  AWS_CREDENTIALS_REGION: eu-west-1
-  AWS_CREDENTIALS_ROLE_DURATION: 1800
-  AWS_CREDENTIALS_ROLE_SESSION_NAME: core_analyticsGitHubActionsDeployment
   GITHUB_USERNAME: ${{ github.actor }}
 
 jobs:
@@ -46,29 +43,14 @@ jobs:
     env:
       DBT_TARGET: ${{ inputs.dbt-target }}
       DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
+      DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
+      DBX_SECRET: ${{ secrets.DBX_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Activate uv
         uses: ./.github/actions/setup_uv
-
-      - name: Configure AWS credentials - dbt
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: ${{ env.AWS_CREDENTIALS_REGION }}
-          role-to-assume: arn:aws:iam::755248034388:role/bia-github-actions-core-analytics-dbt-data-role
-          role-duration-seconds: ${{ env.AWS_CREDENTIALS_ROLE_DURATION }}
-          role-session-name: ${{ env.AWS_CREDENTIALS_ROLE_SESSION_NAME }}
-
-      - name: Get dbt service account credentials
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          secret-ids: |
-            DBX_ID,bia/odyssey/global/biauttdbt-client-id
-            DBX_SECRET,bia/odyssey/global/biauttdbt
-            ELEMENTARY,bia/bia-dbt.data/elementary/profile
-          parse-json-secrets: true
 
       - name: CI/CD
         uses: ./.github/actions/dbt_ci_cd

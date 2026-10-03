@@ -145,8 +145,6 @@ runs:
       if: always() && (env.DBT_TARGET == 'production' || env.DBT_TARGET == 'staging')
       uses: ./.github/actions/elementary
       with:
-        slack-token: ${{ env.ELEMENTARY_ELEMENTARY_SLACK_TOKEN }}
-        slack-channel-name: dbt-alerts-core-analytics
         project-dir: ${{ inputs.project-dir }}
         profile-target: ${{ env.DBT_TARGET }}
         elementary-env: ${{ env.DBT_TARGET == 'production' && 'prod' || 'dev' }}

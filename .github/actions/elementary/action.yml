@@ -1,12 +1,6 @@
 name: Upload elementary report
 description: Generate the elementary report and store it as a GitHub artifact
 inputs:
-  slack-token:
-    description: slack token
-    required: true
-  slack-channel-name:
-    description: slack channel name
-    required: true
   project-dir:
     description: Directory containing dbt
     required: true

@@ -74,6 +74,27 @@ runs:
         uv run dbt run-operation \
           drop_schemas \
           --args "{dry_run: False, schema_startswith: $DEV_SCHEMA}"
+    
+    - name: Run project evaluator
+      if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        ENABLE_DBT_PROJECT_EVALUATOR: true
+      run: |
+        if [ $(uv run dbt ls \
+              --select state:modified \
+              --exclude dbt_project_evaluator \
+              --state target_prod \
+              --output json \
+              --log-level error 2>/dev/null | { jq -c . || echo "[]" ; } | wc -l) -gt 0 ]; then
+          echo "Objects have been modified."
+          uv run dbt seed --select dbt_project_evaluator_exceptions
+          uv run dbt build --select "dbt_project_evaluator"
+        else
+          echo "No modifid objects found not running evaluator."
+        fi
+
 
     - name: Limit 0 dbt
       if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
@@ -113,26 +134,6 @@ runs:
             --defer \
             --state target_prod \
             --full-refresh
-        fi
-
-    - name: Run project evaluator
-      if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
-      shell: bash
-      working-directory: ${{ inputs.project-dir }}
-      env:
-        ENABLE_DBT_PROJECT_EVALUATOR: true
-      run: |
-        if [ $(uv run dbt ls \
-              --select state:modified \
-              --exclude dbt_project_evaluator \
-              --state target_prod \
-              --output json \
-              --log-level error 2>/dev/null | { jq -c . || echo "[]" ; } | wc -l) -gt 0 ]; then
-          echo "Objects have been modified."
-          uv run dbt seed --select dbt_project_evaluator_exceptions
-          uv run dbt build --select "dbt_project_evaluator"
-        else
-          echo "No modifid objects found not running evaluator."
         fi
 
     - name: Generate dbt docs

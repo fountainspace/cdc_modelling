@@ -13,9 +13,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Activate uv
+        uses: ./.github/actions/setup_uv
+
+      - name: Check SQL linting
+        run: |
+          uv run diff-quality \
+            --violations sqlfluff \
+            --compare-branch=origin/main \
+            --fail-under=100
+
   build:
+    needs: lint
     uses: ./.github/workflows/_dbt.yml
     secrets: inherit
     with:
       dbt-target: ci
-      run-lint: true

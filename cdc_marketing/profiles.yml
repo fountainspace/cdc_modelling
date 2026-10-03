@@ -53,10 +53,10 @@ elementary:
   outputs:
     production:
       <<: *production_service_account
-      catalog: gold_production
+      catalog: silver_production
       schema: elementary
 
     staging:
       <<: *staging_service_account
-      catalog: gold_silver
+      catalog: silver_staging
       schema: elementary

@@ -3,9 +3,10 @@
     materialized='table' if flags.FULL_REFRESH else 'incremental',
     incremental_strategy='microbatch',
     event_time='ad_date',
-    begin='2025-01-01',
-    batch_size='day',
-    lookback=30
+    begin='2025-01-01' if target.name == 'production' else modules.datetime.datetime.now().isoformat(),
+    batch_size='month',
+    lookback=1,
+    on_schema_change= 'fail'
 ) }}
 
 

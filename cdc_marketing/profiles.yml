@@ -17,7 +17,7 @@ cdc_marketing:
   outputs:
     dev: &dev_service_account
       <<: *base
-      host: dbc-0196bfaf-1e17.cloud.databricks.com
+      host: dbc-d8521ad9-6ff1.cloud.databricks.com
       token: "{{ env_var('DATABRICKS_PAT_TOKEN') }}"
       catalog: "{{ env_var('DEV_CATALOG') }}"
       schema: "{{ env_var('DEV_SCHEMA') }}"
@@ -27,7 +27,7 @@ cdc_marketing:
       <<: *base_auth
       catalog: ci_development
       schema: "{{ env_var('DEV_SCHEMA') }}"
-      host: dbc-0196bfaf-1e17.cloud.databricks.com
+      host: dbc-d8521ad9-6ff1.cloud.databricks.com
       http_path: /sql/1.0/warehouses/10cc60dfec423f90
 
     staging: &staging_service_account
@@ -40,7 +40,7 @@ cdc_marketing:
       <<: *base_auth
       catalog: gold_production
       schema: analytics
-      host: dbc-0196bfaf-1e17.cloud.databricks.com
+      host: dbc-d8521ad9-6ff1.cloud.databricks.com
       http_path: /sql/1.0/warehouses/10cc60dfec423f90
 
       

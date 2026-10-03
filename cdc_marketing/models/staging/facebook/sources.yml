@@ -29,7 +29,7 @@ sources:
       
       - name: ads
         description: ads data from  facebook plaform (static)
-        identifier: facebook_ads_ad_history_randomized
+        identifier: new_ads_de_randomized
         config:
           enabled: true
           event_time: ad_updated_at

@@ -32,7 +32,7 @@ cdc_marketing:
 
     staging: &staging_service_account
       <<: *ci_service_account
-      catalog: gold_production
+      catalog: gold_staging
       schema: analytics
       http_path: /sql/1.0/warehouses/10cc60dfec423f90
 

@@ -72,7 +72,7 @@ runs:
       run: |
         # the drop of dev schema needs to be done on PRs to be sure that models run freshly on each run
         uv run dbt run-operation \
-          babbel_utils.drop_schemas \
+          drop_schemas \
           --args "{dry_run: False, schema_startswith: $DEV_SCHEMA}"
 
     - name: Limit 0 dbt

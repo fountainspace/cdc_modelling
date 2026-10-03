@@ -37,7 +37,7 @@ formatted AS (
         -- Metadata
         ad_date
     FROM
-        all_ad_stats 
+        all_ad_stats
 
 )
 

@@ -5,7 +5,7 @@
 WITH source_data AS (
 
     SELECT * FROM {{ source('facebook_ads', 'adgroups') }}
-    {{ add_rows_limit() }} 
+    {{ add_rows_limit() }}
 
 ),
 

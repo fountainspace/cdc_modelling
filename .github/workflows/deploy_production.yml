@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    inputs:
+      dbt-args:
+        description: 'Args to pass to the dbt pipeline'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -19,3 +27,5 @@ jobs:
     secrets: inherit
     with:
       dbt-target: production
+      full-run: ${{ github.event_name != 'push' }}
+      dbt-args: ${{ github.event.inputs.dbt-args || '' }}

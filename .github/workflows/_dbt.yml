@@ -12,6 +12,16 @@ on:
         required: false
         type: boolean
         default: false
+      full-run:
+        description: Build the whole project (daily run) instead of only modified models
+        required: false
+        type: boolean
+        default: false
+      dbt-args:
+        description: Extra args passed to dbt build on a full run
+        required: false
+        type: string
+        default: ''
 
 env:
   GITHUB_USERNAME: ${{ github.actor }}
@@ -57,3 +67,5 @@ jobs:
         with:
           project-dir: cdc_marketing
           github-token: ${{ github.token }}
+          full-run: ${{ inputs.full-run }}
+          dbt-args: ${{ inputs.dbt-args }}

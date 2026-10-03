@@ -25,7 +25,7 @@ cdc_marketing:
 
     ci: &ci_service_account
       <<: *base_auth
-      catalog: ci_development_global
+      catalog: ci_development
       schema: "{{ env_var('DEV_SCHEMA') }}"
       host: dbc-d8521ad9-6ff1.cloud.databricks.com
       http_path: /sql/1.0/warehouses/10cc60dfec423f90

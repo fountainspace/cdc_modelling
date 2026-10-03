@@ -23,10 +23,13 @@ jobs:
 
       - name: Activate uv
         uses: ./.github/actions/setup_uv
+        with:
+          working-directory: cdc_marketing
 
       - name: Check SQL linting
+        # run from repo root so diff-quality's git paths resolve; sqlfluff picks up cdc_marketing/.sqlfluff
         run: |
-          uv run diff-quality \
+          uv run --project cdc_marketing diff-quality \
             --violations sqlfluff \
             --compare-branch=origin/main \
             --fail-under=100

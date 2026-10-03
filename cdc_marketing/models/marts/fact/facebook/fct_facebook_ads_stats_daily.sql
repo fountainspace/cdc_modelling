@@ -1,6 +1,6 @@
 
 {{ config(
-    materialized='incremental',
+    materialized='table' if flags.FULL_REFRESH else 'incremental',
     incremental_strategy='microbatch',
     event_time='ad_date',
     begin='2025-01-01',

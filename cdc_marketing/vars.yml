@@ -1,0 +1,7 @@
+
+vars:
+  dbt_project_evaluator:
+    models_fanout_threshold: 4 # max number of downstream dependencies for each model
+    model_types: ["staging", "intermediate", "marts"]
+    marts_prefixes: ["fct_", "dim_"] 
+    exclude_packages: ["elementary"]

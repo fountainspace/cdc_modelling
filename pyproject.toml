@@ -1,0 +1,8 @@
+[project]
+name = "cdc-modelling"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "dbt-databricks>=1.12.5",
+    "elementary-data[databricks]~=0.22.0",
+]

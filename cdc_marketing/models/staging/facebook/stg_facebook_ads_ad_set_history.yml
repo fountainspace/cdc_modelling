@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_facebook_ads_ad_set_history
+    description: Facebook ad set history
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ad_group_id
+            - ad_group_updated_at

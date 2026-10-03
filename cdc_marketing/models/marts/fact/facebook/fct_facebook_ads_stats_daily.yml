@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: fct_facebook_ads_stats_daily
+    description: "Facebook ad stats"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ad_id
+            - ad_date
+ 
+    #config:
+    #  contract:
+    #    enforced: true
+
+    columns:
+      - name: ad_id
+        description: "The unique identifier for each ad detail record"
+        data_type: string
+        

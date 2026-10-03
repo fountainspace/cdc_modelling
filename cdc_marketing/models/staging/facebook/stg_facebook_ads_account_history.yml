@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_facebook_ads_account_history
+    description: Facebook platform account model
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - account_id
+            - account_updated_at
+    
+      

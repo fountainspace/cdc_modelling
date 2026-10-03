@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_facebook_ads_campaign_history
+    description: Facebook campaign history
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - campaign_id
+              - campaign_updated_at
+

@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: int_facebook_ads_details
+    description: Facebook ad details
+    columns:
+      - name: ad_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: channel_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Paid Social

@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: dim_facebook_ads_details
+    description: "Ad details across all sources"
+    #config:
+    #  contract:
+    #    enforced: true
+    
+    columns:
+      - name: ad_id
+        description: "The unique identifier for each ad detail record"
+        data_type: string
+        data_tests:
+          - not_null
+          - unique

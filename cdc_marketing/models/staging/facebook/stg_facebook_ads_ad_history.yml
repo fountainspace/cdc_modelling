@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_facebook_ads_ad_history
+    description: Facebook ads source for identifiers
+    columns:
+      - name: ad_id
+        data_tests:
+          - not_null
+          - unique

@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: stg_facebook_ads_basic_all_levels
+    description: Facebook daily stats aggregated at the ad level
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ad_date
+            - ad_id
+    columns:
+      - name: ad_id
+        tests:
+          - not_null

@@ -1,0 +1,152 @@
+name: DBT CI/CD
+description: Reusable dbt CI/CD job
+
+inputs:
+  project-dir:
+    description: Directory containing dbt
+    required: true
+
+  manifest-artifact-name:
+    description: Name of the GitHub artifact holding the production manifest.json
+    required: false
+    default: dbt-prod-manifest
+
+  github-token:
+    description: Token used to look up and download artifacts from previous runs
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get dbt prod manifest.json
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        mkdir -p target_prod
+        # Latest non-expired production manifest uploaded from main
+        RUN_ID=$(gh api \
+          "repos/${{ github.repository }}/actions/artifacts?name=${{ inputs.manifest-artifact-name }}&per_page=20" \
+          --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")][0].workflow_run.id // empty')
+
+        if [[ -n "$RUN_ID" ]]; then
+          gh run download "$RUN_ID" \
+            --repo ${{ github.repository }} \
+            --name ${{ inputs.manifest-artifact-name }} \
+            --dir target_prod
+          echo "HAS_PROD_STATE=true" >> $GITHUB_ENV
+        else
+          echo "::warning::No production manifest found, building the full project without state comparison."
+          echo "HAS_PROD_STATE=false" >> $GITHUB_ENV
+        fi
+
+    - name: Export $DEV_SCHEMA
+      uses: ./.github/actions/export_dev_schema
+
+    - name: Setup dbt
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: |
+        uv run dbt debug
+        uv run dbt deps
+
+    - name: Delete dev schema
+      if: env.DBT_TARGET == 'ci'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: |
+        # the drop of dev schema needs to be done on PRs to be sure that models run freshly on each run
+        uv run dbt run-operation \
+          babbel_utils.drop_schemas \
+          --args "{dry_run: False, schema_startswith: $DEV_SCHEMA}"
+
+    - name: Limit 0 dbt
+      if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: |
+        uv run dbt seed \
+          --select state:modified \
+          --state target_prod
+        uv run dbt run \
+          --select state:modified+1 \
+          --exclude tag:introspective_contract \
+          --defer \
+          --state target_prod \
+          --empty
+
+    - name: Build all dbt
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: |
+        if [[ "$HAS_PROD_STATE" != "true" ]]; then
+          uv run dbt build --full-refresh
+        elif [[ "$DBT_TARGET" == "ci" ]]; then
+          uv run dbt build  \
+            --select state:modified+1 \
+            --defer \
+            --state target_prod \
+            --indirect-selection=buildable \
+            --fail-fast
+        else
+          uv run dbt build  \
+            --select state:modified+ \
+            --defer \
+            --state target_prod \
+            --full-refresh
+        fi
+
+    - name: Run project evaluator
+      if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        ENABLE_DBT_PROJECT_EVALUATOR: true
+      run: |
+        if [ $(uv run dbt ls \
+              --select state:modified \
+              --exclude dbt_project_evaluator \
+              --state target_prod \
+              --output json \
+              --log-level error 2>/dev/null | { jq -c . || echo "[]" ; } | wc -l) -gt 0 ]; then
+          echo "Objects have been modified."
+          uv run dbt seed --select dbt_project_evaluator_exceptions
+          uv run dbt build --select "dbt_project_evaluator"
+        else
+          echo "No modifid objects found not running evaluator."
+        fi
+
+    - name: Generate dbt docs
+      if: env.DBT_TARGET != 'ci'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: |
+        uv run dbt docs generate --static
+
+    - name: Upload prod manifest.json
+      if: env.DBT_TARGET == 'production'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.manifest-artifact-name }}
+        path: ${{ inputs.project-dir }}/target/manifest.json
+        retention-days: 90
+        if-no-files-found: error
+
+    - name: Upload dbt docs
+      if: env.DBT_TARGET != 'ci'
+      uses: actions/upload-artifact@v4
+      with:
+        name: dbt-docs-${{ env.DBT_TARGET }}
+        path: ${{ inputs.project-dir }}/target/static_index.html
+        retention-days: 90
+
+    - name: Run elementary
+      if: always() && (env.DBT_TARGET == 'production' || env.DBT_TARGET == 'staging')
+      uses: ./.github/actions/elementary
+      with:
+        slack-token: ${{ env.ELEMENTARY_ELEMENTARY_SLACK_TOKEN }}
+        slack-channel-name: dbt-alerts-core-analytics
+        project-dir: ${{ inputs.project-dir }}
+        profile-target: ${{ env.DBT_TARGET }}
+        elementary-env: ${{ env.DBT_TARGET == 'production' && 'prod' || 'dev' }}

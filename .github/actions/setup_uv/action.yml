@@ -1,0 +1,47 @@
+name: 'Setup uv'
+description: 'Set up Python, uv, and install dependencies with caching'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  uv-version:
+    description: 'uv version to use'
+    required: false
+    default: '0.8.13'
+  uv-sync-extra-args:
+    description: 'uv sync extra aguments to pass to the sync command'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Working directory for uv operations'
+    required: false
+    default: '.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6.6.0
+      with:
+        version: ${{ inputs.uv-version }}
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v4.2.4
+      with:
+        path: ~/.cache/uv
+        key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles(format('{0}/pyproject.toml', inputs.working-directory), format('{0}/uv.lock', inputs.working-directory)) }}
+        restore-keys: |
+          uv-${{ runner.os }}-${{ inputs.python-version }}-
+          uv-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: uv sync ${{ inputs.uv-sync-extra-args }}

@@ -8,7 +8,7 @@ models:
           combination_of_columns:
             - ad_id
             - ad_date
- 
+
     #config:
     #  contract:
     #    enforced: true
@@ -17,4 +17,3 @@ models:
       - name: ad_id
         description: "The unique identifier for each ad detail record"
         data_type: string
-        

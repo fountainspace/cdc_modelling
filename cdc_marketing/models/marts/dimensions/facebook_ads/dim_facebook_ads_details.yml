@@ -6,7 +6,7 @@ models:
     #config:
     #  contract:
     #    enforced: true
-    
+
     columns:
       - name: ad_id
         description: "The unique identifier for each ad detail record"

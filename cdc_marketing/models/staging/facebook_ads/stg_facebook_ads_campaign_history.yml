@@ -9,4 +9,3 @@ models:
             combination_of_columns:
               - campaign_id
               - campaign_updated_at
-

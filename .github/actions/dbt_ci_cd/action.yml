@@ -74,7 +74,7 @@ runs:
         uv run dbt run-operation \
           drop_schemas \
           --args "{dry_run: False, schema_startswith: $DEV_SCHEMA}"
-    
+
     - name: Run project evaluator
       if: env.DBT_TARGET == 'ci' && env.HAS_PROD_STATE == 'true'
       shell: bash
@@ -106,7 +106,6 @@ runs:
           --state target_prod
         uv run dbt run \
           --select state:modified+1 \
-          --exclude tag:introspective_contract \
           --defer \
           --state target_prod \
           --empty

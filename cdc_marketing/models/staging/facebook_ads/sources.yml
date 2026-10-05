@@ -4,11 +4,11 @@ sources:
     description: data from  facebook plaform (static)
     schema: cdc_staging
     config:
-      enabled: true 
-      meta: 
+      enabled: true
+      meta:
         owner: "@cde_engineer"
       freshness:
-        warn_after:  
+        warn_after:
           count: 2
           period: day
 
@@ -26,29 +26,24 @@ sources:
         config:
           enabled: true
           event_time: ad_group_updated_at
-      
+
       - name: ads
         description: ads data from  facebook plaform (static)
         identifier: new_ads_de_randomized
         config:
           enabled: true
           event_time: ad_updated_at
-      
+
       - name: accounts
         description: accounts data from  facebook plaform (static)
         identifier: new_acccount_de_randomized
         config:
           enabled: true
           event_time: account_updated_at
-      
+
       - name: ads_stats
         description: ads stats on spend, clicks and impression data from  facebook plaform (static)
         identifier: ads_stats
         config:
           enabled: true
           event_time: ad_date
-     
-
-
-
-          

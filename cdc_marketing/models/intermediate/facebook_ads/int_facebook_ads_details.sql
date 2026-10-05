@@ -79,7 +79,6 @@ join_all_details AS (
 
 ),
 
-
 /*
     Formatted
 */

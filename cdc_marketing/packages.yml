@@ -1,5 +1,5 @@
-packages: 
-  
+packages:
+
   - package: dbt-labs/dbt_utils
     version: [">=1.0.0", "<2.0.0"]
 
@@ -8,3 +8,6 @@ packages:
 
   - package: metaplane/dbt_expectations
     version: 0.10.10
+
+  - package: dbt-labs/dbt_project_evaluator
+    version: [">=1.0.0", "<2.0.0"]

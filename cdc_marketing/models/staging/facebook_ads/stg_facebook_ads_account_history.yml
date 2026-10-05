@@ -8,5 +8,3 @@ models:
           combination_of_columns:
             - account_id
             - account_updated_at
-    
-      

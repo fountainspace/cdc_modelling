@@ -32,7 +32,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   cdc_marketing:
     # Config indicated by + and applies to all files under models/example/
-    staging: 
+    staging:
       +catalog: "{{ 'silver_production' if (target.name == 'production') else 'silver_staging' if (target.name == 'staging') else target.catalog }}"
       +schema: staging
 
@@ -53,7 +53,7 @@ models:
     +catalog: "{{ 'silver_production' if (target.name == 'production') else 'silver_staging' if (target.name == 'staging') else target.catalog }}"
     +schema: "elementary"
     +enabled: "{{ target.name in ['production', 'staging'] | as_bool }}"
-  
+
   dbt_project_evaluator:
     +meta:
       owner: "external_package"
@@ -61,5 +61,6 @@ models:
     # disable by default unless specifically enabled and prevent from running on production
     +enabled: "{{ (target.name not in ['production', 'staging'] | as_bool) and (env_var('ENABLE_DBT_PROJECT_EVALUATOR', 'false') | lower == 'true' | as_bool)  }}"
 
-  
-  
+data_tests:
+  dbt_project_evaluator:
+    +severity: "{{ env_var('DBT_PROJECT_EVALUATOR_SEVERITY', 'error') }}"

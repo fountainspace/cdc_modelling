@@ -5,9 +5,7 @@
 WITH source_data AS (
 
     SELECT * FROM {{ source('facebook_ads', 'campaigns') }}
-    {{ add_rows_limit() }}
-
-),
+{{ add_rows_limit() }}),
 
 /*
     Transformations
@@ -23,8 +21,8 @@ formatted AS (
         CAST(campaign_name AS STRING) AS campaign_name,
 
         -- Metadata
-        CAST(campaign_updated_at AS TIMESTAMP) AS campaign_updated_at,
-        current_timestamp()
+        CAST(campaign_updated_at AS TIMESTAMP) AS campaign_updated_at
+
     FROM
         source_data
 )

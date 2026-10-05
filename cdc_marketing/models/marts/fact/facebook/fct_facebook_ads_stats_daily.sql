@@ -1,4 +1,3 @@
-
 {{ config(
     materialized='table' if flags.FULL_REFRESH else 'incremental',
     incremental_strategy='microbatch',
@@ -32,8 +31,8 @@ formatted AS (
 
         -- Metrics
         ad_spend,
-       -- ad_impressions,
-       -- ad_clicks,
+        ad_impressions,
+        ad_clicks,
 
         -- Metadata
         ad_date

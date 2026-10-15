@@ -155,7 +155,7 @@ cd cdc_marketing
 uv sync
 ```
 
-This creates `cdc_marketing/.venv` with dbt, Elementary, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
+This creates `cdc_marketing/.venv` with dbt, Elementary, docglow, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
 
 ### 3. Set environment variables
 
@@ -186,6 +186,18 @@ uv run dbt build --select stg_facebook_ads_ad_history+   # a model and everythin
 uv run dbt build --select staging.facebook                # everything in a folder
 uv run dbt docs generate && uv run dbt docs serve
 ```
+
+#### Column-level lineage (docglow)
+
+[docglow](https://github.com/docglow/docglow) builds a docs site with column-level lineage from `target/manifest.json` (+ `catalog.json`). It runs offline with sqlglot, so no warehouse connection or dbt platform account is needed. Run `dbt docs generate` first so the manifest has compiled SQL:
+
+```bash
+uv run dbt docs generate
+uv run docglow generate --project-dir . --output-dir target/docglow
+uv run docglow serve --dir target/docglow              # then open Lineage, pick a model, expand its columns
+```
+
+Columns docglow couldn't trace are listed in `target/docglow/.docglow-column-lineage-failures.log` (hard-coded literals such as `'Paid Social' AS channel_name` show up there by design).
 
 ### 5. Lint SQL
 
@@ -251,7 +263,7 @@ Triggered when a PR into `main` is **labelled `deploy-to-staging`**. It runs onc
 
 1. Download the production `manifest.json`.
 2. `dbt build --select state:modified+ --defer --state target_prod --full-refresh`: everything the PR changed compared with production, plus everything downstream, written to the **staging** catalogs.
-3. Generate dbt docs, then upload them as the `dbt-docs-staging` artifact.
+3. Generate dbt docs and the docglow site, then upload them as the `dbt-docs-staging` and `docglow-staging` artifacts.
 4. Run Elementary against the `staging` profile and upload `elementary-report-staging`.
 
 Staging never uploads a manifest, so it can't change what CI and production compare against.
@@ -273,7 +285,7 @@ Staging never uploads a manifest, so it can't change what CI and production comp
   - leave empty to build everything
 
 Every production run then:
-1. Generates dbt docs and uploads `dbt-docs-production`.
+1. Generates dbt docs and the docglow column-lineage site, uploading `dbt-docs-production` and `docglow-production`.
 2. Uploads `target/manifest.json` as **`dbt-prod-manifest`**. This becomes the state that CI, staging and the next production deploy compare against.
 3. Runs Elementary against the `production` profile and uploads `elementary-report-production`. This runs even if the build failed.
 
@@ -298,6 +310,7 @@ The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retentio
 |---|---|---|
 | `dbt-prod-manifest` | Production runs | `manifest.json` used for `state:modified` comparisons |
 | `dbt-docs-production` / `dbt-docs-staging` | Production / staging runs | `static_index.html`, self-contained dbt docs |
+| `docglow-production` / `docglow-staging` | Production / staging runs | `index.html`, self-contained docglow site with column-level lineage |
 | `elementary-report-production` / `elementary-report-staging` | Production / staging runs | `elementary_report.html` |
 
 **To view the docs or the Elementary report:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:

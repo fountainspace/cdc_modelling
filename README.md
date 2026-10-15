@@ -155,7 +155,7 @@ cd cdc_marketing
 uv sync
 ```
 
-This creates `cdc_marketing/.venv` with dbt, Elementary, docglow, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
+This creates `cdc_marketing/.venv` with dbt, Elementary, docglow, dbt-colibri, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
 
 ### 3. Set environment variables
 
@@ -198,6 +198,19 @@ uv run docglow serve --dir target/docglow              # then open Lineage, pick
 ```
 
 Columns docglow couldn't trace are listed in `target/docglow/.docglow-column-lineage-failures.log` (hard-coded literals such as `'Paid Social' AS channel_name` show up there by design).
+
+#### Column-level lineage (dbt-colibri)
+
+[dbt-colibri](https://github.com/b-ned/dbt-colibri) is a second column-lineage report, also offline (sqlglot). Unlike docglow it reads each model's columns from `catalog.json`, so the models must be **built** before `dbt docs generate`, otherwise only source → staging lineage appears.
+
+```bash
+uv run dbt build
+uv run dbt docs generate
+DO_NOT_TRACK=1 DBT_COLIBRI_NO_VERSION_CHECK=1 uv run colibri generate --output-dir target/colibri --disable-telemetry
+python3 -m http.server 8080 -d target/colibri    # then open http://localhost:8080
+```
+
+Always pass `--disable-telemetry`: the generated report otherwise sends anonymous usage events (adapter type, node count) to PostHog from every viewer's browser.
 
 ### 5. Lint SQL
 
@@ -263,7 +276,7 @@ Triggered when a PR into `main` is **labelled `deploy-to-staging`**. It runs onc
 
 1. Download the production `manifest.json`.
 2. `dbt build --select state:modified+ --defer --state target_prod --full-refresh`: everything the PR changed compared with production, plus everything downstream, written to the **staging** catalogs.
-3. Generate dbt docs and the docglow site, then upload them as the `dbt-docs-staging` and `docglow-staging` artifacts.
+3. Generate dbt docs, the docglow site and the dbt-colibri report, then upload them as the `dbt-docs-staging`, `docglow-staging` and `colibri-staging` artifacts.
 4. Run Elementary against the `staging` profile and upload `elementary-report-staging`.
 
 Staging never uploads a manifest, so it can't change what CI and production compare against.
@@ -285,7 +298,7 @@ Staging never uploads a manifest, so it can't change what CI and production comp
   - leave empty to build everything
 
 Every production run then:
-1. Generates dbt docs and the docglow column-lineage site, uploading `dbt-docs-production` and `docglow-production`.
+1. Generates dbt docs, the docglow site and the dbt-colibri report, uploading `dbt-docs-production`, `docglow-production` and `colibri-production`.
 2. Uploads `target/manifest.json` as **`dbt-prod-manifest`**. This becomes the state that CI, staging and the next production deploy compare against.
 3. Runs Elementary against the `production` profile and uploads `elementary-report-production`. This runs even if the build failed.
 
@@ -311,6 +324,7 @@ The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retentio
 | `dbt-prod-manifest` | Production runs | `manifest.json` used for `state:modified` comparisons |
 | `dbt-docs-production` / `dbt-docs-staging` | Production / staging runs | `static_index.html`, self-contained dbt docs |
 | `docglow-production` / `docglow-staging` | Production / staging runs | `index.html`, self-contained docglow site with column-level lineage |
+| `colibri-production` / `colibri-staging` | Production / staging runs | `index.html`, self-contained dbt-colibri column-lineage report |
 | `elementary-report-production` / `elementary-report-staging` | Production / staging runs | `elementary_report.html` |
 
 **To view the docs or the Elementary report:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:

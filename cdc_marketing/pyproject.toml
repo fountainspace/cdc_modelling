@@ -3,6 +3,7 @@ name = "cdc-marketing"
 version = "0.1.0"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "dbt-colibri==0.3.7",
     "dbt-databricks>=1.12.5",
     "docglow>=0.9.1,<0.10",
     "elementary-data[databricks]>=0.26,<0.27",

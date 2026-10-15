@@ -148,6 +148,22 @@ runs:
           --static \
           --title "cdc_marketing (${{ env.DBT_TARGET }})"
 
+    - name: Generate dbt-colibri lineage report
+      if: env.DBT_TARGET != 'ci'
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        # the report embeds opt-out PostHog telemetry and the CLI checks PyPI; turn both off
+        DO_NOT_TRACK: 1
+        DBT_COLIBRI_NO_VERSION_CHECK: 1
+      run: |
+        # column-level lineage from manifest.json (compiled SQL) + catalog.json (column schemas)
+        uv run colibri generate \
+          --manifest target/manifest.json \
+          --catalog target/catalog.json \
+          --output-dir target/colibri \
+          --disable-telemetry
+
     - name: Upload prod manifest.json
       if: env.DBT_TARGET == 'production'
       uses: actions/upload-artifact@v4
@@ -171,6 +187,14 @@ runs:
       with:
         name: docglow-${{ env.DBT_TARGET }}
         path: ${{ inputs.project-dir }}/target/docglow/index.html
+        retention-days: 90
+
+    - name: Upload dbt-colibri report
+      if: env.DBT_TARGET != 'ci'
+      uses: actions/upload-artifact@v4
+      with:
+        name: colibri-${{ env.DBT_TARGET }}
+        path: ${{ inputs.project-dir }}/target/colibri/index.html
         retention-days: 90
 
     - name: Run elementary

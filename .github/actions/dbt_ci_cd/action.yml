@@ -141,6 +141,12 @@ runs:
       working-directory: ${{ inputs.project-dir }}
       run: |
         uv run dbt docs generate --static
+        # column-level lineage site, built offline from manifest.json (compiled SQL) + catalog.json
+        uv run docglow generate \
+          --project-dir . \
+          --output-dir target/docglow \
+          --static \
+          --title "cdc_marketing (${{ env.DBT_TARGET }})"
 
     - name: Upload prod manifest.json
       if: env.DBT_TARGET == 'production'
@@ -157,6 +163,14 @@ runs:
       with:
         name: dbt-docs-${{ env.DBT_TARGET }}
         path: ${{ inputs.project-dir }}/target/static_index.html
+        retention-days: 90
+
+    - name: Upload docglow docs
+      if: env.DBT_TARGET != 'ci'
+      uses: actions/upload-artifact@v4
+      with:
+        name: docglow-${{ env.DBT_TARGET }}
+        path: ${{ inputs.project-dir }}/target/docglow/index.html
         retention-days: 90
 
     - name: Run elementary

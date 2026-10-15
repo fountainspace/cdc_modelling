@@ -167,6 +167,7 @@ dependencies = [
     { name = "dbt-databricks" },
     { name = "docglow" },
     { name = "elementary-data", extra = ["databricks"] },
+    { name = "sqlglot" },
 ]
 
 [package.dev-dependencies]
@@ -181,6 +182,7 @@ requires-dist = [
     { name = "dbt-databricks", specifier = ">=1.12.5" },
     { name = "docglow", specifier = ">=0.9.1,<0.10" },
     { name = "elementary-data", extras = ["databricks"], specifier = ">=0.26,<0.27" },
+    { name = "sqlglot", specifier = "~=30.18.0" },
 ]
 
 [package.metadata.requires-dev]

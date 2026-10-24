@@ -16,15 +16,3 @@ sources:
       - name: ad_geo_country_daily_report
         description: snapchat daily ads stats by geo
         identifier: snapchat_ads_stats
-
-      - name: ad_history
-        description: snapchat ad id detail(no scd)
-        identifier: snapchat_ads_ad_history_new_ad_names
-
-      - name: ad_squad_history
-        description: snapchat ad group details(no scd)
-        identifier: snapchat_ads_adgroup_history_new_ad_group_names
-
-      - name: campaign_history
-        description: snapchat campaign details(no scd)
-        identifier: snapchat_ads_campaign_history_new_campaign_names

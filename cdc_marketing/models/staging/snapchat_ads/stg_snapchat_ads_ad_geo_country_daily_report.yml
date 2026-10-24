@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_snapchat_ads_ad_geo_country_daily_report
+    description: snapchat
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ad_detail_id
+            - ad_date
+            - ad_country

@@ -1,0 +1,18 @@
+sources:
+  - name: snapchat_ads
+    database: bronze_production
+    description: data from  facebook plaform (static)
+    schema: snapchat
+    config:
+      enabled: true
+      meta:
+        owner: "@cde_engineer"
+      freshness:
+        warn_after:
+          count: 2
+          period: day
+
+    tables:
+      - name: ad_geo_country_daily_report
+        description: snapchat daily ads stats by geo
+        identifier: snapchat_ads_stats

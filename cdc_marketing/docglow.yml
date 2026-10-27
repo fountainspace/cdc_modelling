@@ -1,0 +1,11 @@
+# docglow config, picked up from --project-dir (cdc_marketing/).
+# Reference: https://docs.docglow.com/configuration/#full-configuration-reference
+# Known limitations / upstream issue: https://github.com/docglow/docglow/issues/170
+version: 1
+
+health:
+  complexity:
+    high_sql_lines: 200         # default
+    high_join_count: 10         # default 8
+    high_cte_count: 10          # default
+    high_subquery_count: 10     # default 5; CTE-heavy models like int_facebook_ads_details hit 6

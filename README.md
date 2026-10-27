@@ -199,6 +199,23 @@ uvx docglow@0.9.2 serve --dir target/docglow              # then open Lineage, p
 
 Columns docglow couldn't trace are listed in `target/docglow/.docglow-column-lineage-failures.log` (hard-coded literals such as `'Paid Social' AS channel_name` show up there by design).
 
+##### How the docglow health score is calculated
+
+The Health page grades the project from six scores, each 0–100. The formulas below are from docglow 0.9.2 (`docglow/analyzer/health.py`, `coverage.py`). Package models are excluded via `--exclude "models/edr/*"`, so only `cdc_marketing` models count.
+
+| Score | Formula | What counts |
+|---|---|---|
+| **Documentation** | (models documented % + columns documented %) / 2 | A model or column counts if its `description` isn't empty. Columns are every model column (catalog + YAML) **plus source columns**. |
+| **Testing** | (models tested % + columns tested %) / 2 | A model is tested if it has any test, including model-level ones like `unique_combination_of_columns`. A column is tested only if it has a column-level test. Source columns are in the column total, but their tests are never counted, so this can't reach 100 while sources have columns. |
+| **Freshness** | (passing + 0.5 × warning) / sources checked × 100 | From `dbt source freshness` (`target/sources.json`). Pass = 1, warn = 0.5, error = 0. Sources without a freshness config aren't counted. |
+| **Complexity** | models within limits / models × 100 | A model is "high complexity" if it exceeds any limit in [`docglow.yml`](cdc_marketing/docglow.yml): SQL lines 200, joins 10, CTEs 10, subqueries 10. |
+| **Naming** | compliant models / models checked × 100 | Models in a `staging`, `intermediate` or `marts` folder must start with `stg_`, `int_` or `fct_`/`dim_`. |
+| **Orphans** | (1 − models with no downstream model / models) × 100 | Marts are the end of the DAG, so they always count as orphans unless something (e.g. an exposure) depends on them. |
+
+**Overall score** is the weighted sum: documentation 25%, testing 25%, freshness 15%, complexity 15%, naming 10%, orphans 10%. These weights can be changed under `health.weights` in `docglow.yml`. If no source has freshness results (e.g. a local run without `dbt source freshness`), freshness is dropped and the other weights are scaled up to total 100%. That's why a local build can grade higher than CI. Grades: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, otherwise F.
+
+Example: Freshness was 50 when all 6 sources were at `warn`, because (0 + 0.5 × 6) / 6 × 100 = 50.
+
 Known docglow limitations, reported upstream in [docglow/docglow#170](https://github.com/docglow/docglow/issues/170):
 
 - Column lineage re-parses each model's SQL once per column, so it's slow on large projects (a shared scope per model measured 3.3× faster).

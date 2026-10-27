@@ -61,6 +61,11 @@ models:
     # disable by default unless specifically enabled and prevent from running on production
     +enabled: "{{ (target.name not in ['production', 'staging'] | as_bool) and (env_var('ENABLE_DBT_PROJECT_EVALUATOR', 'false') | lower == 'true' | as_bool)  }}"
 
+seeds:
+  dbt_project_evaluator:
+    # the exceptions seed is only read by the evaluator models, so follow the same switch
+    +enabled: "{{ (target.name not in ['production', 'staging'] | as_bool) and (env_var('ENABLE_DBT_PROJECT_EVALUATOR', 'false') | lower == 'true' | as_bool)  }}"
+
 data_tests:
   dbt_project_evaluator:
     +severity: "{{ env_var('DBT_PROJECT_EVALUATOR_SEVERITY', 'error') }}"

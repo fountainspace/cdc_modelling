@@ -9,8 +9,38 @@ models:
 
     columns:
       - name: ad_id
-        description: "The unique identifier for each ad detail record"
+        description: "{{ doc('ad_id') }}"
         data_type: string
         data_tests:
           - not_null
           - unique
+
+      - name: ad_group_id
+        description: "{{ doc('ad_group_id') }}"
+
+      - name: campaign_id
+        description: "{{ doc('campaign_id') }}"
+
+      - name: account_id
+        description: "{{ doc('account_id') }}"
+
+      - name: ad_name
+        description: "{{ doc('ad_name') }}"
+
+      - name: ad_group_name
+        description: "{{ doc('ad_group_name') }}"
+
+      - name: campaign_name
+        description: "{{ doc('campaign_name') }}"
+
+      - name: account_name
+        description: "{{ doc('account_name') }}"
+
+      - name: channel_name
+        description: "{{ doc('channel_name') }}"
+
+      - name: ad_detail_updated_at
+        description: "{{ doc('ad_detail_updated_at') }}"
+
+      - name: data_src
+        description: "{{ doc('data_src') }}"

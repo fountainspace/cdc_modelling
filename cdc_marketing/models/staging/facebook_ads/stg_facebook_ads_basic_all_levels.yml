@@ -10,5 +10,21 @@ models:
             - ad_id
     columns:
       - name: ad_id
+        description: "{{ doc('ad_id') }}"
         tests:
           - not_null
+
+      - name: account_id
+        description: "{{ doc('account_id') }}"
+
+      - name: ad_spend
+        description: "{{ doc('ad_spend') }}"
+
+      - name: ad_impressions
+        description: "{{ doc('ad_impressions') }}"
+
+      - name: ad_clicks
+        description: "{{ doc('ad_clicks') }}"
+
+      - name: ad_date
+        description: "{{ doc('ad_date') }}"

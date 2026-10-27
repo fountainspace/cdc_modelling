@@ -31,6 +31,11 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   cdc_marketing:
+    # write model and column descriptions to Unity Catalog as table/column comments
+    +persist_docs:
+      relation: true
+      columns: true
+
     # Config indicated by + and applies to all files under models/example/
     staging:
       +catalog: "{{ 'silver_production' if (target.name == 'production') else 'silver_staging' if (target.name == 'staging') else target.catalog }}"

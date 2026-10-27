@@ -19,6 +19,15 @@ sources:
         config:
           enabled: true
           event_time: campaign_updated_at
+        columns:
+          - name: campaign_id
+            description: "{{ doc('campaign_id') }}"
+
+          - name: campaign_name
+            description: "{{ doc('campaign_name') }}"
+
+          - name: campaign_updated_at
+            description: "{{ doc('campaign_updated_at') }}"
 
       - name: adgroups
         description: adgroups data from  facebook plaform (static)
@@ -26,6 +35,15 @@ sources:
         config:
           enabled: true
           event_time: ad_group_updated_at
+        columns:
+          - name: ad_group_id
+            description: "{{ doc('ad_group_id') }}"
+
+          - name: ad_group_name
+            description: "{{ doc('ad_group_name') }}"
+
+          - name: ad_group_updated_at
+            description: "{{ doc('ad_group_updated_at') }}"
 
       - name: ads
         description: ads data from  facebook plaform (static)
@@ -33,6 +51,27 @@ sources:
         config:
           enabled: true
           event_time: ad_updated_at
+        columns:
+          - name: ad_id
+            description: "{{ doc('ad_id') }}"
+
+          - name: campaign_id
+            description: "{{ doc('campaign_id') }}"
+
+          - name: ad_group_id
+            description: "{{ doc('ad_group_id') }}"
+
+          - name: account_id
+            description: "{{ doc('account_id') }}"
+
+          - name: ad_name
+            description: "{{ doc('ad_name') }}"
+
+          - name: ad_status
+            description: "{{ doc('ad_status') }}"
+
+          - name: ad_updated_at
+            description: "{{ doc('ad_updated_at') }}"
 
       - name: accounts
         description: accounts data from  facebook plaform (static)
@@ -40,6 +79,21 @@ sources:
         config:
           enabled: true
           event_time: account_updated_at
+        columns:
+          - name: account_id
+            description: "{{ doc('account_id') }}"
+
+          - name: account_name
+            description: "{{ doc('account_name') }}"
+
+          - name: ad_currency_code
+            description: "{{ doc('ad_currency_code') }}"
+
+          - name: account_created_at
+            description: "{{ doc('account_created_at') }}"
+
+          - name: account_updated_at
+            description: "{{ doc('account_updated_at') }}"
 
       - name: ads_stats
         description: ads stats on spend, clicks and impression data from  facebook plaform (static)
@@ -47,3 +101,21 @@ sources:
         config:
           enabled: true
           event_time: ad_date
+        columns:
+          - name: ad_id
+            description: "{{ doc('ad_id') }}"
+
+          - name: account_id
+            description: "{{ doc('account_id') }}"
+
+          - name: ad_spend
+            description: "{{ doc('ad_spend') }}"
+
+          - name: ad_impressions
+            description: "{{ doc('ad_impressions') }}"
+
+          - name: ad_clicks
+            description: "{{ doc('ad_clicks') }}"
+
+          - name: ad_date
+            description: "{{ doc('ad_date') }}"

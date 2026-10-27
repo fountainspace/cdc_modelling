@@ -9,3 +9,12 @@ models:
             combination_of_columns:
               - campaign_id
               - campaign_updated_at
+    columns:
+      - name: campaign_id
+        description: "{{ doc('campaign_id') }}"
+
+      - name: campaign_name
+        description: "{{ doc('campaign_name') }}"
+
+      - name: campaign_updated_at
+        description: "{{ doc('campaign_updated_at') }}"

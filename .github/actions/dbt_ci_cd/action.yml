@@ -142,8 +142,9 @@ runs:
       run: |
         uv run dbt docs generate --static
         # column-level lineage site, built offline from manifest.json (compiled SQL) + catalog.json;
-        # --exclude drops the Elementary package models (models/edr/...) from the site and health score
-        uv run docglow generate \
+        # --exclude drops the Elementary package models (models/edr/...) from the site and health score.
+        # docglow runs in its own uvx env: 0.9.2 needs sqlglot<30, dbt-colibri needs sqlglot 30.x.
+        uvx docglow@0.9.2 generate \
           --project-dir . \
           --output-dir target/docglow \
           --static \

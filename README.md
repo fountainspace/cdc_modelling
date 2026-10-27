@@ -155,7 +155,7 @@ cd cdc_marketing
 uv sync
 ```
 
-This creates `cdc_marketing/.venv` with dbt, Elementary, docglow, dbt-colibri, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
+This creates `cdc_marketing/.venv` with dbt, Elementary, dbt-colibri, sqlfluff and diff-cover. Prefix commands with `uv run` (or activate the venv).
 
 ### 3. Set environment variables
 
@@ -189,12 +189,12 @@ uv run dbt docs generate && uv run dbt docs serve
 
 #### Column-level lineage (docglow)
 
-[docglow](https://github.com/docglow/docglow) builds a docs site with column-level lineage from `target/manifest.json` (+ `catalog.json`). It runs offline with sqlglot, so no warehouse connection or dbt platform account is needed. Run `dbt docs generate` first so the manifest has compiled SQL:
+[docglow](https://github.com/docglow/docglow) builds a docs site with column-level lineage from `target/manifest.json` (+ `catalog.json`). It runs offline with sqlglot, so no warehouse connection or dbt platform account is needed. It runs through `uvx` in its own environment rather than the project venv, because docglow 0.9.2 needs `sqlglot<30` while dbt-colibri needs `sqlglot` 30.x. Health-score settings (complexity thresholds, weights, naming rules) live in [`docglow.yml`](cdc_marketing/docglow.yml). Run `dbt docs generate` first so the manifest has compiled SQL:
 
 ```bash
 uv run dbt docs generate
-uv run docglow generate --project-dir . --output-dir target/docglow
-uv run docglow serve --dir target/docglow              # then open Lineage, pick a model, expand its columns
+uvx docglow@0.9.2 generate --project-dir . --output-dir target/docglow --exclude "models/edr/*"
+uvx docglow@0.9.2 serve --dir target/docglow              # then open Lineage, pick a model, expand its columns
 ```
 
 Columns docglow couldn't trace are listed in `target/docglow/.docglow-column-lineage-failures.log` (hard-coded literals such as `'Paid Social' AS channel_name` show up there by design).

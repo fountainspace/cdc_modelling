@@ -141,11 +141,13 @@ runs:
       working-directory: ${{ inputs.project-dir }}
       run: |
         uv run dbt docs generate --static
-        # column-level lineage site, built offline from manifest.json (compiled SQL) + catalog.json
+        # column-level lineage site, built offline from manifest.json (compiled SQL) + catalog.json;
+        # --exclude drops the Elementary package models (models/edr/...) from the site and health score
         uv run docglow generate \
           --project-dir . \
           --output-dir target/docglow \
           --static \
+          --exclude "models/edr/*" \
           --title "cdc_marketing (${{ env.DBT_TARGET }})"
 
     - name: Generate dbt-colibri lineage report

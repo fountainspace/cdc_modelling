@@ -8,3 +8,18 @@ models:
           combination_of_columns:
             - account_id
             - account_updated_at
+    columns:
+      - name: account_id
+        description: "{{ doc('account_id') }}"
+
+      - name: account_name
+        description: "{{ doc('account_name') }}"
+
+      - name: ad_currency_code
+        description: "{{ doc('ad_currency_code') }}"
+
+      - name: account_created_at
+        description: "{{ doc('account_created_at') }}"
+
+      - name: account_updated_at
+        description: "{{ doc('account_updated_at') }}"

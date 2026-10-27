@@ -8,3 +8,12 @@ models:
           combination_of_columns:
             - ad_group_id
             - ad_group_updated_at
+    columns:
+      - name: ad_group_id
+        description: "{{ doc('ad_group_id') }}"
+
+      - name: ad_group_name
+        description: "{{ doc('ad_group_name') }}"
+
+      - name: ad_group_updated_at
+        description: "{{ doc('ad_group_updated_at') }}"

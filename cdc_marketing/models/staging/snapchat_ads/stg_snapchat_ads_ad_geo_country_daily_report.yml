@@ -9,3 +9,27 @@ models:
             - ad_detail_id
             - ad_date
             - ad_country
+    columns:
+      - name: ad_detail_id
+        description: "{{ doc('ad_detail_id') }}"
+
+      - name: ad_currency_code
+        description: "{{ doc('ad_currency_code') }}"
+
+      - name: ad_country
+        description: "{{ doc('ad_country') }}"
+
+      - name: ad_spend
+        description: "{{ doc('ad_spend') }}"
+
+      - name: ad_impressions
+        description: "{{ doc('ad_impressions') }}"
+
+      - name: ad_clicks
+        description: "{{ doc('ad_clicks') }}"
+
+      - name: ad_date
+        description: "{{ doc('ad_date') }}"
+
+      - name: data_src
+        description: "{{ doc('data_src') }}"

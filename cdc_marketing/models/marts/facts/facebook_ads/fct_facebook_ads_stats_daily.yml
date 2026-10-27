@@ -15,5 +15,17 @@ models:
 
     columns:
       - name: ad_id
-        description: "The unique identifier for each ad detail record"
+        description: "{{ doc('ad_id') }}"
         data_type: string
+
+      - name: ad_spend
+        description: "{{ doc('ad_spend') }}"
+
+      - name: ad_impressions
+        description: "{{ doc('ad_impressions') }}"
+
+      - name: ad_clicks
+        description: "{{ doc('ad_clicks') }}"
+
+      - name: ad_date
+        description: "{{ doc('ad_date') }}"

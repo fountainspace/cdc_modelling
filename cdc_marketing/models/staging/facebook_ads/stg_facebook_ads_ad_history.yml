@@ -5,6 +5,25 @@ models:
     description: Facebook ads source for identifiers
     columns:
       - name: ad_id
+        description: "{{ doc('ad_id') }}"
         data_tests:
           - not_null
           - unique
+
+      - name: campaign_id
+        description: "{{ doc('campaign_id') }}"
+
+      - name: ad_group_id
+        description: "{{ doc('ad_group_id') }}"
+
+      - name: account_id
+        description: "{{ doc('account_id') }}"
+
+      - name: ad_name
+        description: "{{ doc('ad_name') }}"
+
+      - name: ad_status
+        description: "{{ doc('ad_status') }}"
+
+      - name: ad_updated_at
+        description: "{{ doc('ad_updated_at') }}"

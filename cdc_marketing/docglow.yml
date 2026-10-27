@@ -1,5 +1,6 @@
 # docglow config, picked up from --project-dir (cdc_marketing/).
 # Reference: https://docs.docglow.com/configuration/#full-configuration-reference
+# Known limitations / upstream issue: https://github.com/docglow/docglow/issues/170
 version: 1
 
 health:

@@ -199,6 +199,12 @@ uvx docglow@0.9.2 serve --dir target/docglow              # then open Lineage, p
 
 Columns docglow couldn't trace are listed in `target/docglow/.docglow-column-lineage-failures.log` (hard-coded literals such as `'Paid Social' AS channel_name` show up there by design).
 
+Known docglow limitations, reported upstream in [docglow/docglow#170](https://github.com/docglow/docglow/issues/170):
+
+- Column lineage re-parses each model's SQL once per column, so it's slow on large projects (a shared scope per model measured 3.3× faster).
+- The `sqlglot<30` cap clashes with dbt-colibri's `sqlglot` 30.x, which is why docglow runs through `uvx`. Revisit the `uvx` setup if this is lifted.
+- Source columns count toward the Testing score's column total but their tests are never counted, so Testing can't reach 100.
+
 #### Column-level lineage (dbt-colibri)
 
 [dbt-colibri](https://github.com/b-ned/dbt-colibri) is a second column-lineage report, also offline (sqlglot). Unlike docglow it reads each model's columns from `catalog.json`, so the models must be **built** before `dbt docs generate`, otherwise only source → staging lineage appears.

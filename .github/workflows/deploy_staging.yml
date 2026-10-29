@@ -6,19 +6,30 @@ on:
       - labeled
     branches:
       - main
+  # Manual run (Actions → Deploy to Staging → Run workflow), like Deploy to Production:
+  # builds the whole project, or only what dbt-args selects (e.g. --select elementary).
+  workflow_dispatch:
+    inputs:
+      dbt-args:
+        description: 'Args to pass to the dbt pipeline'
+        required: false
+        default: ''
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: deploy-staging-${{ github.event.pull_request.number }}
+  # PR runs: one per PR. Manual runs: one per branch.
+  group: deploy-staging-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    if: github.event.label.name == 'deploy-to-staging'
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'deploy-to-staging'
     uses: ./.github/workflows/_dbt.yml
     secrets: inherit
     with:
       dbt-target: staging
+      full-run: ${{ github.event_name == 'workflow_dispatch' }}
+      dbt-args: ${{ github.event.inputs.dbt-args || '' }}

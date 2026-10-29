@@ -44,3 +44,58 @@ jobs:
           github-token: ${{ github.token }}
           full-run: ${{ inputs.full-run }}
           dbt-args: ${{ inputs.dbt-args }}
+
+  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri) to ADLS:
+  #   fountain<stg|prod>storage / dbt / manifest/manifest.json   (production only)
+  #                                    docs/{dbt,docglow,colibri}/...
+  # Staging and production only: ci (PR) runs never log in to Azure.
+  publish-adls:
+    if: inputs.dbt-target != 'ci'
+    needs: build-databricks
+    runs-on: ubuntu-latest
+    # The GitHub Environment picks this env's AZURE_CLIENT_ID and is what Azure trusts
+    # (OIDC subject ...:environment:<target>). Callers must grant `id-token: write`.
+    environment: ${{ inputs.dbt-target }}
+    env:
+      STORAGE_ACCOUNT: fountain${{ inputs.dbt-target == 'production' && 'prod' || 'stg' }}storage
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get prod manifest.json
+        if: inputs.dbt-target == 'production'
+        uses: actions/download-artifact@v4
+        with:
+          name: dbt-prod-manifest
+          path: adls/manifest
+
+      - name: Get dbt docs
+        uses: actions/download-artifact@v4
+        with:
+          name: dbt-docs-${{ inputs.dbt-target }}
+          path: adls/docs/dbt
+
+      - name: Get docglow docs
+        uses: actions/download-artifact@v4
+        with:
+          name: docglow-${{ inputs.dbt-target }}
+          path: adls/docs/docglow
+
+      - name: Get dbt-colibri report
+        uses: actions/download-artifact@v4
+        with:
+          name: colibri-${{ inputs.dbt-target }}
+          path: adls/docs/colibri
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload to ADLS
+        uses: ./.github/actions/upload_adls
+        with:
+          storage-account: ${{ env.STORAGE_ACCOUNT }}
+          source-dir: adls

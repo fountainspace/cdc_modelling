@@ -49,8 +49,10 @@ jobs:
   #   fountain<stg|prod>storage / dbt / manifest/manifest.json   (production only)
   #                                    docs/{dbt,docglow,colibri}/...
   # Staging and production only: ci (PR) runs never log in to Azure.
+  # Like the GitHub uploads, it publishes whatever the dbt job produced, even if a
+  # later step there failed (e.g. Elementary); a missing artifact is just skipped.
   publish-adls:
-    if: inputs.dbt-target != 'ci'
+    if: ${{ !cancelled() && inputs.dbt-target != 'ci' }}
     needs: build-databricks
     runs-on: ubuntu-latest
     # The GitHub Environment picks this env's AZURE_CLIENT_ID and is what Azure trusts
@@ -64,30 +66,35 @@ jobs:
 
       - name: Get prod manifest.json
         if: inputs.dbt-target == 'production'
+        continue-on-error: true # Not produced this run → nothing to publish.
         uses: actions/download-artifact@v4
         with:
           name: dbt-prod-manifest
           path: adls/manifest
 
       - name: Get dbt docs
+        continue-on-error: true # Not produced this run → nothing to publish.
         uses: actions/download-artifact@v4
         with:
           name: dbt-docs-${{ inputs.dbt-target }}
           path: adls/docs/dbt
 
       - name: Get docglow docs
+        continue-on-error: true # Not produced this run → nothing to publish.
         uses: actions/download-artifact@v4
         with:
           name: docglow-${{ inputs.dbt-target }}
           path: adls/docs/docglow
 
       - name: Get dbt-colibri report
+        continue-on-error: true # Not produced this run → nothing to publish.
         uses: actions/download-artifact@v4
         with:
           name: colibri-${{ inputs.dbt-target }}
           path: adls/docs/colibri
 
       - name: Azure login (OIDC)
+        if: hashFiles('adls/**') != ''
         uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -95,6 +102,7 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Upload to ADLS
+        if: hashFiles('adls/**') != ''
         uses: ./.github/actions/upload_adls
         with:
           storage-account: ${{ env.STORAGE_ACCOUNT }}

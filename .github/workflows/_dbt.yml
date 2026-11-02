@@ -125,4 +125,3 @@ jobs:
           storage-account: ${{ env.STORAGE_ACCOUNT }}
           web-app: ${{ env.DOCS_SITE }}
           resource-group: rg-dbt-docs-${{ inputs.dbt-target }}
-          dbt-target: ${{ inputs.dbt-target }}

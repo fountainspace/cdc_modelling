@@ -36,7 +36,7 @@ dbt project that models paid marketing data (currently Facebook Ads) on Databric
 │   ├── CODEOWNERS
 │   ├── actions/
 │   │   ├── dbt_ci_cd/          # the dbt build pipeline (state download, build, docs, artifacts)
-│   │   ├── deploy_docs_site/   # publish docs from ADLS to the tenant-only docs site (+ landing page)
+│   │   ├── deploy_docs_site/   # publish docs from ADLS to the tenant-only docs site
 │   │   ├── elementary/         # generate + upload the Elementary report
 │   │   ├── export_dev_schema/  # derive the PR schema name (PR_<BRANCH>)
 │   │   ├── setup_uv/           # install Python, uv and the project's dependencies (cached)
@@ -365,23 +365,26 @@ Swap `dbt-docs-production` for `elementary-report-production` to get the Element
 
 ### Docs site
 
-The latest dbt docs, docglow, dbt-colibri and Elementary reports are always at one link. Bookmark it:
+The latest dbt docs, docglow, dbt-colibri and Elementary reports each have a fixed link. Bookmark the ones you use:
 
-| Environment | Link | Updated by |
+| Report | Production | Staging |
 |---|---|---|
-| production | **https://dbt-docs-prod.azurewebsites.net** | every production run (merge, daily 10:00 UTC, manual) |
-| staging | https://dbt-docs-stg.azurewebsites.net | every staging deploy |
+| dbt docs | **https://dbt-docs-prod.azurewebsites.net/dbt/static_index.html** | https://dbt-docs-stg.azurewebsites.net/dbt/static_index.html |
+| docglow | https://dbt-docs-prod.azurewebsites.net/docglow/index.html | https://dbt-docs-stg.azurewebsites.net/docglow/index.html |
+| dbt-colibri | https://dbt-docs-prod.azurewebsites.net/colibri/index.html | https://dbt-docs-stg.azurewebsites.net/colibri/index.html |
+| Elementary | https://dbt-docs-prod.azurewebsites.net/elementary/elementary_report.html | https://dbt-docs-stg.azurewebsites.net/elementary/elementary_report.html |
 
-Only people in our Microsoft Entra tenant can open it. The first visit asks you to sign in with your work account and to allow "Sign you in and read your profile"; after that the browser remembers you. The landing page links each report and shows when and by which run it was last updated.
+Production is refreshed by every production run (merge, daily 10:00 UTC, manual), staging by every staging deploy. The site root (`/`) has no page of its own; open a report link.
+
+Only people in our Microsoft Entra tenant can open it. The first visit asks you to sign in with your work account and to allow "Sign you in and read your profile"; after that the browser remembers you.
 
 How it gets there, in the `publish-adls` job of [`_dbt.yml`](.github/workflows/_dbt.yml):
 
 ```
 dbt job ──artifacts──► publish-adls ──upload_adls──► fountain<stg|prod>storage / dbt / docs/{dbt,docglow,colibri,elementary}/
-                                    └─deploy_docs_site─► download docs/ from ADLS + landing page ──zip deploy──► dbt-docs-<stg|prod>
+                                    └─deploy_docs_site─► download docs/ from ADLS ──zip deploy──► dbt-docs-<stg|prod>
 ```
 
-- Report paths: `/dbt/static_index.html`, `/docglow/index.html`, `/colibri/index.html`, `/elementary/elementary_report.html`. Each can be bookmarked on its own.
 - The site is rebuilt from ADLS, not only from this run, so if a run doesn't produce one report, the last version of it stays online.
 - The site, its sign-in and the deploy permission are managed in [fountainspace/infra](https://github.com/fountainspace/infra): `terraform/teams/data-engineering/docs_site/dbt` and `deploy_docs_sites` in `terraform/repositories/cdc_modelling`. See its `modules/docs-site` README for limits (Free tier: sleeps when idle, so the first visit can take a few seconds).
 - **Why not open the files in storage directly?** A blob URL such as `https://fountainprodstorage.blob.core.windows.net/dbt/docs/dbt/static_index.html` can't ask the browser to sign in, and the storage account doesn't allow anonymous access, so it fails with `PublicAccessNotPermitted`. With a data role on the account you can still download them: `az storage blob download-batch --account-name fountainprodstorage --source dbt --pattern 'docs/*' --destination ~/dbt-docs --auth-mode login`.

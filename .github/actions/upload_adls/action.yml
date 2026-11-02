@@ -1,0 +1,34 @@
+name: Upload to ADLS
+description: Upload a local folder to an Azure Data Lake (ADLS Gen2) container, overwriting what's there
+# Needs an earlier `azure/login` step: uploads use that Entra login (--auth-mode login),
+# never storage account keys. The identity needs Storage Blob Data Contributor on the account.
+
+inputs:
+  storage-account:
+    description: Storage account name, e.g. fountainprodstorage
+    required: true
+  container:
+    description: Container (file system) to upload into
+    required: false
+    default: dbt
+  source-dir:
+    description: Local folder to upload; its layout is kept as-is under the container
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Upload ${{ inputs.source-dir }} to ${{ inputs.storage-account }}/${{ inputs.container }}
+      shell: bash
+      run: |
+        # every file under source-dir → <container>/<same relative path>, replacing older copies
+        az storage blob upload-batch \
+          --account-name "${{ inputs.storage-account }}" \
+          --destination "${{ inputs.container }}" \
+          --source "${{ inputs.source-dir }}" \
+          --auth-mode login \
+          --overwrite \
+          --only-show-errors
+
+        echo "### Uploaded to ADLS: ${{ inputs.storage-account }}/${{ inputs.container }}" >> "$GITHUB_STEP_SUMMARY"
+        (cd "${{ inputs.source-dir }}" && find . -type f | sed 's|^\./|- |') >> "$GITHUB_STEP_SUMMARY"

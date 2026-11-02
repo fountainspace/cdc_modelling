@@ -18,6 +18,7 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write # Azure login (OIDC) in _dbt.yml's publish-adls job.
 
 concurrency:
   # PR runs: one per PR. Manual runs: one per branch.

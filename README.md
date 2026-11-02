@@ -304,7 +304,7 @@ Triggered when a PR into `main` is **labelled `deploy-to-staging`**. It runs onc
 2. `dbt build --select state:modified+ --defer --state target_prod --full-refresh`: everything the PR changed compared with production, plus everything downstream, written to the **staging** catalogs.
 3. Generate dbt docs, the docglow site and the dbt-colibri report, then upload them as the `dbt-docs-staging`, `docglow-staging` and `colibri-staging` artifacts.
 4. Run Elementary against the `staging` profile and upload `elementary-report-staging`.
-5. Copy the docs to `fountainstgstorage/dbt/docs/` and publish them to the [docs site](#docs-site) https://dbt-docs-stg.azurewebsites.net.
+5. Copy the docs and the Elementary report to `fountainstgstorage/dbt/docs/` and publish them to the [docs site](#docs-site) https://dbt-docs-stg.azurewebsites.net.
 
 Staging never uploads a manifest, so it can't change what CI and production compare against.
 
@@ -328,7 +328,7 @@ Every production run then:
 1. Generates dbt docs, the docglow site and the dbt-colibri report, uploading `dbt-docs-production`, `docglow-production` and `colibri-production`.
 2. Uploads `target/manifest.json` as **`dbt-prod-manifest`**. This becomes the state that CI, staging and the next production deploy compare against.
 3. Runs Elementary against the `production` profile and uploads `elementary-report-production`. This runs even if the build failed.
-4. Copies the manifest and docs to `fountainprodstorage/dbt/` and publishes the docs to the [docs site](#docs-site) https://dbt-docs-prod.azurewebsites.net.
+4. Copies the manifest, docs and Elementary report to `fountainprodstorage/dbt/` and publishes the docs and report to the [docs site](#docs-site) https://dbt-docs-prod.azurewebsites.net.
 
 ### How the build decides what to run
 
@@ -355,7 +355,7 @@ The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retentio
 | `colibri-production` / `colibri-staging` | Production / staging runs | `index.html`, self-contained dbt-colibri column-lineage report |
 | `elementary-report-production` / `elementary-report-staging` | Production / staging runs | `elementary_report.html` |
 
-**To view the docs:** use the [docs site](#docs-site). **For the Elementary report, or docs from a particular run:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:
+**To view the docs or the Elementary report:** use the [docs site](#docs-site). **For a particular run's copy:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:
 
 ```bash
 gh run download $(gh run list --repo victoredo/cdc_modelling --workflow deploy_production.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId') --repo victoredo/cdc_modelling --name dbt-docs-production --dir ~/Downloads/dbt-docs && open ~/Downloads/dbt-docs/static_index.html
@@ -365,7 +365,7 @@ Swap `dbt-docs-production` for `elementary-report-production` to get the Element
 
 ### Docs site
 
-The latest dbt docs, docglow and dbt-colibri reports are always at one link. Bookmark it:
+The latest dbt docs, docglow, dbt-colibri and Elementary reports are always at one link. Bookmark it:
 
 | Environment | Link | Updated by |
 |---|---|---|
@@ -377,10 +377,11 @@ Only people in our Microsoft Entra tenant can open it. The first visit asks you 
 How it gets there, in the `publish-adls` job of [`_dbt.yml`](.github/workflows/_dbt.yml):
 
 ```
-dbt job ──artifacts──► publish-adls ──upload_adls──► fountain<stg|prod>storage / dbt / docs/{dbt,docglow,colibri}/
+dbt job ──artifacts──► publish-adls ──upload_adls──► fountain<stg|prod>storage / dbt / docs/{dbt,docglow,colibri,elementary}/
                                     └─deploy_docs_site─► download docs/ from ADLS + landing page ──zip deploy──► dbt-docs-<stg|prod>
 ```
 
+- Report paths: `/dbt/static_index.html`, `/docglow/index.html`, `/colibri/index.html`, `/elementary/elementary_report.html`. Each can be bookmarked on its own.
 - The site is rebuilt from ADLS, not only from this run, so if a run doesn't produce one report, the last version of it stays online.
 - The site, its sign-in and the deploy permission are managed in [fountainspace/infra](https://github.com/fountainspace/infra): `terraform/teams/data-engineering/docs_site/dbt` and `deploy_docs_sites` in `terraform/repositories/cdc_modelling`. See its `modules/docs-site` README for limits (Free tier: sleeps when idle, so the first visit can take a few seconds).
 - **Why not open the files in storage directly?** A blob URL such as `https://fountainprodstorage.blob.core.windows.net/dbt/docs/dbt/static_index.html` can't ask the browser to sign in, and the storage account doesn't allow anonymous access, so it fails with `PublicAccessNotPermitted`. With a data role on the account you can still download them: `az storage blob download-batch --account-name fountainprodstorage --source dbt --pattern 'docs/*' --destination ~/dbt-docs --auth-mode login`.

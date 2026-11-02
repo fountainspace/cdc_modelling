@@ -45,9 +45,9 @@ jobs:
           full-run: ${{ inputs.full-run }}
           dbt-args: ${{ inputs.dbt-args }}
 
-  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri) to ADLS:
+  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri, Elementary) to ADLS:
   #   fountain<stg|prod>storage / dbt / manifest/manifest.json   (production only)
-  #                                    docs/{dbt,docglow,colibri}/...
+  #                                    docs/{dbt,docglow,colibri,elementary}/...
   # then publishes docs/ to the tenant-only docs site (sign-in required, bookmarkable):
   #   https://dbt-docs-<stg|prod>.azurewebsites.net
   # Staging and production only: ci (PR) runs never log in to Azure.
@@ -95,6 +95,13 @@ jobs:
         with:
           name: colibri-${{ inputs.dbt-target }}
           path: adls/docs/colibri
+
+      - name: Get Elementary report
+        continue-on-error: true # Not produced this run → nothing to publish.
+        uses: actions/download-artifact@v4
+        with:
+          name: elementary-report-${{ inputs.dbt-target }}
+          path: adls/docs/elementary
 
       - name: Azure login (OIDC)
         if: hashFiles('adls/**') != ''

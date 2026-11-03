@@ -1,0 +1,58 @@
+name: Publish report
+description: Publish ONE report file to ADLS and to the tenant-only docs site, at the same path in both
+# Needs an earlier `azure/login` step. The identity needs Storage Blob Data Contributor on the
+# storage account and Website Contributor on the web app (infra: deploy_docs_sites = ["dbt"]).
+# Each report is published on its own: this never touches any other report's files.
+#   <file> → <storage-account>/<container>/docs/<path>
+#          → https://<web-app>.azurewebsites.net/<path>
+
+inputs:
+  file:
+    description: Local report file, e.g. reports/dbt/static_index.html
+    required: true
+  path:
+    description: Where it goes, below docs/ in ADLS and below the site root, e.g. dbt/static_index.html
+    required: true
+  storage-account:
+    description: Storage account, e.g. fountainprodstorage
+    required: true
+  container:
+    description: Container (file system) to upload into
+    required: false
+    default: dbt
+  web-app:
+    description: Docs site web app, e.g. dbt-docs-prod
+    required: true
+  resource-group:
+    description: Its resource group, e.g. rg-dbt-docs-production
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Upload to ${{ inputs.storage-account }}/${{ inputs.container }}/docs/${{ inputs.path }}
+      shell: bash
+      run: |
+        az storage fs file upload \
+          --account-name "${{ inputs.storage-account }}" \
+          --file-system "${{ inputs.container }}" \
+          --path "docs/${{ inputs.path }}" \
+          --source "${{ inputs.file }}" \
+          --overwrite \
+          --auth-mode login \
+          --only-show-errors > /dev/null
+
+    - name: Deploy to https://${{ inputs.web-app }}.azurewebsites.net/${{ inputs.path }}
+      shell: bash
+      run: |
+        # --type static + --clean false: copies this one file to <site root>/<path>; every other file stays.
+        az webapp deploy \
+          --resource-group "${{ inputs.resource-group }}" \
+          --name "${{ inputs.web-app }}" \
+          --src-path "${{ inputs.file }}" \
+          --type static \
+          --target-path "${{ inputs.path }}" \
+          --clean false \
+          --only-show-errors > /dev/null
+
+        echo "- https://${{ inputs.web-app }}.azurewebsites.net/${{ inputs.path }}" >> "$GITHUB_STEP_SUMMARY"

@@ -45,14 +45,15 @@ jobs:
           full-run: ${{ inputs.full-run }}
           dbt-args: ${{ inputs.dbt-args }}
 
-  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri, Elementary) to ADLS:
-  #   fountain<stg|prod>storage / dbt / manifest/manifest.json   (production only)
-  #                                    docs/{dbt,docglow,colibri,elementary}/...
-  # then publishes docs/ to the tenant-only docs site (sign-in required, bookmarkable):
-  #   https://dbt-docs-<stg|prod>.azurewebsites.net
-  # Staging and production only: ci (PR) runs never log in to Azure.
-  # Like the GitHub uploads, it publishes whatever the dbt job produced, even if a
-  # later step there failed (e.g. Elementary); a missing artifact is just skipped.
+  # Publishes this run's GitHub artifacts to Azure. Staging and production only:
+  # ci (PR) runs never log in to Azure.
+  #   manifest (production only) → fountain<stg|prod>storage / dbt / manifest/manifest.json
+  #   each report, on its own     → fountain<stg|prod>storage / dbt / docs/<report>/<file>
+  #                                 https://dbt-docs-<stg|prod>.azurewebsites.net/<report>/<file>
+  # Every report has its own get + publish steps, like its GitHub artifact: a report this
+  # run didn't produce is skipped (its last version stays online), and one report failing
+  # doesn't stop the others. Like the GitHub uploads, it publishes whatever the dbt job
+  # produced, even if a later step there failed (e.g. Elementary).
   publish-adls:
     if: ${{ !cancelled() && inputs.dbt-target != 'ci' }}
     needs: build-databricks
@@ -63,6 +64,7 @@ jobs:
     env:
       STORAGE_ACCOUNT: fountain${{ inputs.dbt-target == 'production' && 'prod' || 'stg' }}storage
       DOCS_SITE: dbt-docs-${{ inputs.dbt-target == 'production' && 'prod' || 'stg' }}
+      DOCS_RESOURCE_GROUP: rg-dbt-docs-${{ inputs.dbt-target }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,53 +77,95 @@ jobs:
           name: dbt-prod-manifest
           path: adls/manifest
 
-      - name: Get dbt docs
-        continue-on-error: true # Not produced this run → nothing to publish.
-        uses: actions/download-artifact@v4
-        with:
-          name: dbt-docs-${{ inputs.dbt-target }}
-          path: adls/docs/dbt
-
-      - name: Get docglow docs
-        continue-on-error: true # Not produced this run → nothing to publish.
-        uses: actions/download-artifact@v4
-        with:
-          name: docglow-${{ inputs.dbt-target }}
-          path: adls/docs/docglow
-
-      - name: Get dbt-colibri report
-        continue-on-error: true # Not produced this run → nothing to publish.
-        uses: actions/download-artifact@v4
-        with:
-          name: colibri-${{ inputs.dbt-target }}
-          path: adls/docs/colibri
-
-      - name: Get Elementary report
-        continue-on-error: true # Not produced this run → nothing to publish.
-        uses: actions/download-artifact@v4
-        with:
-          name: elementary-report-${{ inputs.dbt-target }}
-          path: adls/docs/elementary
-
       - name: Azure login (OIDC)
-        if: hashFiles('adls/**') != ''
         uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Upload to ADLS
+      - name: Upload manifest to ADLS
         if: hashFiles('adls/**') != ''
         uses: ./.github/actions/upload_adls
         with:
           storage-account: ${{ env.STORAGE_ACCOUNT }}
           source-dir: adls
 
-      - name: Deploy docs site
-        if: hashFiles('adls/docs/**') != ''
-        uses: ./.github/actions/deploy_docs_site
+      # ---- dbt docs ----
+      - name: Get dbt docs
+        id: get-dbt
+        continue-on-error: true # Not produced this run → nothing to publish.
+        uses: actions/download-artifact@v4
         with:
+          name: dbt-docs-${{ inputs.dbt-target }}
+          path: reports/dbt
+
+      - name: Publish dbt docs
+        if: ${{ !cancelled() && steps.get-dbt.outcome == 'success' }}
+        uses: ./.github/actions/publish_report
+        with:
+          file: reports/dbt/static_index.html
+          path: dbt/static_index.html
           storage-account: ${{ env.STORAGE_ACCOUNT }}
           web-app: ${{ env.DOCS_SITE }}
-          resource-group: rg-dbt-docs-${{ inputs.dbt-target }}
+          resource-group: ${{ env.DOCS_RESOURCE_GROUP }}
+
+      # ---- docglow ----
+      - name: Get docglow docs
+        id: get-docglow
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: docglow-${{ inputs.dbt-target }}
+          path: reports/docglow
+
+      - name: Publish docglow docs
+        if: ${{ !cancelled() && steps.get-docglow.outcome == 'success' }}
+        uses: ./.github/actions/publish_report
+        with:
+          file: reports/docglow/index.html
+          path: docglow/index.html
+          storage-account: ${{ env.STORAGE_ACCOUNT }}
+          web-app: ${{ env.DOCS_SITE }}
+          resource-group: ${{ env.DOCS_RESOURCE_GROUP }}
+
+      # ---- dbt-colibri ----
+      - name: Get dbt-colibri report
+        id: get-colibri
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: colibri-${{ inputs.dbt-target }}
+          path: reports/colibri
+
+      - name: Publish dbt-colibri report
+        if: ${{ !cancelled() && steps.get-colibri.outcome == 'success' }}
+        uses: ./.github/actions/publish_report
+        with:
+          file: reports/colibri/index.html
+          path: colibri/index.html
+          storage-account: ${{ env.STORAGE_ACCOUNT }}
+          web-app: ${{ env.DOCS_SITE }}
+          resource-group: ${{ env.DOCS_RESOURCE_GROUP }}
+
+      # ---- Elementary ----
+      - name: Get Elementary report
+        id: get-elementary
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: elementary-report-${{ inputs.dbt-target }}
+          path: reports/elementary
+
+      - name: Publish Elementary report
+        if: ${{ !cancelled() && steps.get-elementary.outcome == 'success' }}
+        uses: ./.github/actions/publish_report
+        with:
+          file: reports/elementary/elementary_report.html
+          path: elementary/elementary_report.html
+          storage-account: ${{ env.STORAGE_ACCOUNT }}
+          web-app: ${{ env.DOCS_SITE }}
+          resource-group: ${{ env.DOCS_RESOURCE_GROUP }}

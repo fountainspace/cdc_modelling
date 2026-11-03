@@ -27,15 +27,29 @@ runs:
       shell: bash
       run: |
         # docs/{dbt,docglow,colibri,elementary}/... → site/{dbt,docglow,colibri,elementary}/...
-        mkdir -p "$RUNNER_TEMP/download" "$RUNNER_TEMP/site"
-        az storage blob download-batch \
+        # File by file through the ADLS (fs) API: `blob download-batch` also lists the
+        # account's real folders (docs/colibri, ...) as blobs and fails on them.
+        mkdir -p "$RUNNER_TEMP/site"
+        az storage fs file list \
           --account-name "${{ inputs.storage-account }}" \
-          --source "${{ inputs.container }}" \
-          --pattern 'docs/*' \
-          --destination "$RUNNER_TEMP/download" \
+          --file-system "${{ inputs.container }}" \
+          --path docs \
+          --recursive \
           --auth-mode login \
-          --only-show-errors > /dev/null
-        cp -R "$RUNNER_TEMP/download/docs/." "$RUNNER_TEMP/site/"
+          --query "[?!isDirectory].name" -o tsv \
+        | while read -r path; do
+            dest="$RUNNER_TEMP/site/${path#docs/}"
+            mkdir -p "$(dirname "$dest")"
+            az storage fs file download \
+              --account-name "${{ inputs.storage-account }}" \
+              --file-system "${{ inputs.container }}" \
+              --path "$path" \
+              --destination "$dest" \
+              --overwrite \
+              --auth-mode login \
+              --only-show-errors > /dev/null
+          done
+        test -n "$(ls -A "$RUNNER_TEMP/site")" || { echo "::error::Nothing under ${{ inputs.container }}/docs"; exit 1; }
 
         (cd "$RUNNER_TEMP/site" && zip -qr "$RUNNER_TEMP/site.zip" .)
 

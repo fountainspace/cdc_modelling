@@ -36,11 +36,11 @@ dbt project that models paid marketing data (currently Facebook Ads) on Databric
 │   ├── CODEOWNERS
 │   ├── actions/
 │   │   ├── dbt_ci_cd/          # the dbt build pipeline (state download, build, docs, artifacts)
-│   │   ├── deploy_docs_site/   # publish docs from ADLS to the tenant-only docs site
+│   │   ├── publish_report/     # publish ONE report to ADLS + the tenant-only docs site
 │   │   ├── elementary/         # generate + upload the Elementary report
 │   │   ├── export_dev_schema/  # derive the PR schema name (PR_<BRANCH>)
 │   │   ├── setup_uv/           # install Python, uv and the project's dependencies (cached)
-│   │   └── upload_adls/        # copy the run's manifest and docs to ADLS (fountain<stg|prod>storage/dbt)
+│   │   └── upload_adls/        # copy the production manifest to ADLS (fountain<stg|prod>storage/dbt)
 │   └── workflows/
 │       ├── ci.yml                  # pull requests: lint + slim dbt build
 │       ├── deploy_staging.yml      # PR labelled `deploy-to-staging`
@@ -304,7 +304,7 @@ Triggered when a PR into `main` is **labelled `deploy-to-staging`**. It runs onc
 2. `dbt build --select state:modified+ --defer --state target_prod --full-refresh`: everything the PR changed compared with production, plus everything downstream, written to the **staging** catalogs.
 3. Generate dbt docs, the docglow site and the dbt-colibri report, then upload them as the `dbt-docs-staging`, `docglow-staging` and `colibri-staging` artifacts.
 4. Run Elementary against the `staging` profile and upload `elementary-report-staging`.
-5. Copy the docs and the Elementary report to `fountainstgstorage/dbt/docs/` and publish them to the [docs site](#docs-site) https://dbt-docs-stg.azurewebsites.net.
+5. Publish each report, separately, to `fountainstgstorage/dbt/docs/` and the [docs site](#docs-site) https://dbt-docs-stg.azurewebsites.net.
 
 Staging never uploads a manifest, so it can't change what CI and production compare against.
 
@@ -328,7 +328,7 @@ Every production run then:
 1. Generates dbt docs, the docglow site and the dbt-colibri report, uploading `dbt-docs-production`, `docglow-production` and `colibri-production`.
 2. Uploads `target/manifest.json` as **`dbt-prod-manifest`**. This becomes the state that CI, staging and the next production deploy compare against.
 3. Runs Elementary against the `production` profile and uploads `elementary-report-production`. This runs even if the build failed.
-4. Copies the manifest, docs and Elementary report to `fountainprodstorage/dbt/` and publishes the docs and report to the [docs site](#docs-site) https://dbt-docs-prod.azurewebsites.net.
+4. Copies the manifest to `fountainprodstorage/dbt/manifest/`, and publishes each report, separately, to `fountainprodstorage/dbt/docs/` and the [docs site](#docs-site) https://dbt-docs-prod.azurewebsites.net.
 
 ### How the build decides what to run
 
@@ -378,14 +378,22 @@ Production is refreshed by every production run (merge, daily 10:00 UTC, manual)
 
 Only people in our Microsoft Entra tenant can open it. The first visit asks you to sign in with your work account and to allow "Sign you in and read your profile"; after that the browser remembers you.
 
-How it gets there, in the `publish-adls` job of [`_dbt.yml`](.github/workflows/_dbt.yml):
+How it gets there: the `publish-adls` job of [`_dbt.yml`](.github/workflows/_dbt.yml) gives every report its own pair of steps, the same way each one has its own GitHub artifact:
+
+| Report | GitHub artifact | ADLS (`fountain<stg\|prod>storage/dbt/`) | Site path |
+|---|---|---|---|
+| dbt docs | `dbt-docs-<target>` | `docs/dbt/static_index.html` | `/dbt/static_index.html` |
+| docglow | `docglow-<target>` | `docs/docglow/index.html` | `/docglow/index.html` |
+| dbt-colibri | `colibri-<target>` | `docs/colibri/index.html` | `/colibri/index.html` |
+| Elementary | `elementary-report-<target>` | `docs/elementary/elementary_report.html` | `/elementary/elementary_report.html` |
 
 ```
-dbt job ──artifacts──► publish-adls ──upload_adls──► fountain<stg|prod>storage / dbt / docs/{dbt,docglow,colibri,elementary}/
-                                    └─deploy_docs_site─► download docs/ from ADLS ──zip deploy──► dbt-docs-<stg|prod>
+Get <report>     download the artifact (skipped if this run didn't produce it)
+Publish <report> publish_report: upload that one file to ADLS, then deploy that one file to the site
 ```
 
-- The site is rebuilt from ADLS, not only from this run, so if a run doesn't produce one report, the last version of it stays online.
+- Reports never touch each other: each publish writes only its own file, in storage and on the site (`az webapp deploy --type static --clean false`). If a run doesn't produce a report, or publishing one fails, the others still publish and the missing one keeps its last version.
+- To add a report, copy a Get + Publish pair and change the artifact name, `file` and `path`.
 - The site, its sign-in and the deploy permission are managed in [fountainspace/infra](https://github.com/fountainspace/infra): `terraform/teams/data-engineering/docs_site/dbt` and `deploy_docs_sites` in `terraform/repositories/cdc_modelling`. See its `modules/docs-site` README for limits (Free tier: sleeps when idle, so the first visit can take a few seconds).
 - **Why not open the files in storage directly?** A blob URL such as `https://fountainprodstorage.blob.core.windows.net/dbt/docs/dbt/static_index.html` can't ask the browser to sign in, and the storage account doesn't allow anonymous access, so it fails with `PublicAccessNotPermitted`. With a data role on the account you can still download them: `az storage blob download-batch --account-name fountainprodstorage --source dbt --pattern 'docs/*' --destination ~/dbt-docs --auth-mode login`.
 

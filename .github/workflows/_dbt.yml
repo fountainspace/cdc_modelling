@@ -45,9 +45,11 @@ jobs:
           full-run: ${{ inputs.full-run }}
           dbt-args: ${{ inputs.dbt-args }}
 
-  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri) to ADLS:
+  # Copies this run's GitHub artifacts (manifest + dbt docs, docglow, colibri, Elementary) to ADLS:
   #   fountain<stg|prod>storage / dbt / manifest/manifest.json   (production only)
-  #                                    docs/{dbt,docglow,colibri}/...
+  #                                    docs/{dbt,docglow,colibri,elementary}/...
+  # then publishes docs/ to the tenant-only docs site (sign-in required, bookmarkable):
+  #   https://dbt-docs-<stg|prod>.azurewebsites.net
   # Staging and production only: ci (PR) runs never log in to Azure.
   # Like the GitHub uploads, it publishes whatever the dbt job produced, even if a
   # later step there failed (e.g. Elementary); a missing artifact is just skipped.
@@ -60,6 +62,7 @@ jobs:
     environment: ${{ inputs.dbt-target }}
     env:
       STORAGE_ACCOUNT: fountain${{ inputs.dbt-target == 'production' && 'prod' || 'stg' }}storage
+      DOCS_SITE: dbt-docs-${{ inputs.dbt-target == 'production' && 'prod' || 'stg' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -93,6 +96,13 @@ jobs:
           name: colibri-${{ inputs.dbt-target }}
           path: adls/docs/colibri
 
+      - name: Get Elementary report
+        continue-on-error: true # Not produced this run → nothing to publish.
+        uses: actions/download-artifact@v4
+        with:
+          name: elementary-report-${{ inputs.dbt-target }}
+          path: adls/docs/elementary
+
       - name: Azure login (OIDC)
         if: hashFiles('adls/**') != ''
         uses: azure/login@v3
@@ -107,3 +117,11 @@ jobs:
         with:
           storage-account: ${{ env.STORAGE_ACCOUNT }}
           source-dir: adls
+
+      - name: Deploy docs site
+        if: hashFiles('adls/docs/**') != ''
+        uses: ./.github/actions/deploy_docs_site
+        with:
+          storage-account: ${{ env.STORAGE_ACCOUNT }}
+          web-app: ${{ env.DOCS_SITE }}
+          resource-group: rg-dbt-docs-${{ inputs.dbt-target }}

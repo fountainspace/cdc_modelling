@@ -22,6 +22,7 @@ dbt project that models paid marketing data (currently Facebook Ads) on Databric
   - [Deploy to Production](#deploy-to-production)
   - [How the build decides what to run](#how-the-build-decides-what-to-run)
   - [Artifacts: manifest, docs and Elementary report](#artifacts-manifest-docs-and-elementary-report)
+  - [Docs site](#docs-site)
   - [Secrets and settings](#secrets-and-settings)
 - [Conventions](#conventions)
 
@@ -35,9 +36,11 @@ dbt project that models paid marketing data (currently Facebook Ads) on Databric
 │   ├── CODEOWNERS
 │   ├── actions/
 │   │   ├── dbt_ci_cd/          # the dbt build pipeline (state download, build, docs, artifacts)
+│   │   ├── deploy_docs_site/   # publish docs from ADLS to the tenant-only docs site
 │   │   ├── elementary/         # generate + upload the Elementary report
 │   │   ├── export_dev_schema/  # derive the PR schema name (PR_<BRANCH>)
-│   │   └── setup_uv/           # install Python, uv and the project's dependencies (cached)
+│   │   ├── setup_uv/           # install Python, uv and the project's dependencies (cached)
+│   │   └── upload_adls/        # copy the run's manifest and docs to ADLS (fountain<stg|prod>storage/dbt)
 │   └── workflows/
 │       ├── ci.yml                  # pull requests: lint + slim dbt build
 │       ├── deploy_staging.yml      # PR labelled `deploy-to-staging`
@@ -301,6 +304,7 @@ Triggered when a PR into `main` is **labelled `deploy-to-staging`**. It runs onc
 2. `dbt build --select state:modified+ --defer --state target_prod --full-refresh`: everything the PR changed compared with production, plus everything downstream, written to the **staging** catalogs.
 3. Generate dbt docs, the docglow site and the dbt-colibri report, then upload them as the `dbt-docs-staging`, `docglow-staging` and `colibri-staging` artifacts.
 4. Run Elementary against the `staging` profile and upload `elementary-report-staging`.
+5. Copy the docs and the Elementary report to `fountainstgstorage/dbt/docs/` and publish them to the [docs site](#docs-site) https://dbt-docs-stg.azurewebsites.net.
 
 Staging never uploads a manifest, so it can't change what CI and production compare against.
 
@@ -324,6 +328,7 @@ Every production run then:
 1. Generates dbt docs, the docglow site and the dbt-colibri report, uploading `dbt-docs-production`, `docglow-production` and `colibri-production`.
 2. Uploads `target/manifest.json` as **`dbt-prod-manifest`**. This becomes the state that CI, staging and the next production deploy compare against.
 3. Runs Elementary against the `production` profile and uploads `elementary-report-production`. This runs even if the build failed.
+4. Copies the manifest, docs and Elementary report to `fountainprodstorage/dbt/` and publishes the docs and report to the [docs site](#docs-site) https://dbt-docs-prod.azurewebsites.net.
 
 ### How the build decides what to run
 
@@ -340,7 +345,7 @@ The **Build all dbt** step in [`dbt_ci_cd`](.github/actions/dbt_ci_cd/action.yml
 
 ### Artifacts: manifest, docs and Elementary report
 
-The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retention). There is no S3 or other external storage.
+The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retention). Staging and production runs then copy the manifest and docs to Azure storage and publish the docs to the [docs site](#docs-site).
 
 | Artifact | Produced by | Contents |
 |---|---|---|
@@ -350,13 +355,39 @@ The pipeline stores its outputs as **GitHub Actions artifacts** (90-day retentio
 | `colibri-production` / `colibri-staging` | Production / staging runs | `index.html`, self-contained dbt-colibri column-lineage report |
 | `elementary-report-production` / `elementary-report-staging` | Production / staging runs | `elementary_report.html` |
 
-**To view the docs or the Elementary report:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:
+**To view the docs or the Elementary report:** use the [docs site](#docs-site). **For a particular run's copy:** open a successful run under **Actions**, download the artifact from the **Artifacts** section at the bottom, unzip it and open the HTML file in a browser. From the terminal:
 
 ```bash
 gh run download $(gh run list --repo victoredo/cdc_modelling --workflow deploy_production.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId') --repo victoredo/cdc_modelling --name dbt-docs-production --dir ~/Downloads/dbt-docs && open ~/Downloads/dbt-docs/static_index.html
 ```
 
 Swap `dbt-docs-production` for `elementary-report-production` to get the Elementary report.
+
+### Docs site
+
+The latest dbt docs, docglow, dbt-colibri and Elementary reports each have a fixed link. Bookmark the ones you use:
+
+| Report | Production | Staging |
+|---|---|---|
+| dbt docs | **https://dbt-docs-prod.azurewebsites.net/dbt/static_index.html** | https://dbt-docs-stg.azurewebsites.net/dbt/static_index.html |
+| docglow | https://dbt-docs-prod.azurewebsites.net/docglow/index.html | https://dbt-docs-stg.azurewebsites.net/docglow/index.html |
+| dbt-colibri | https://dbt-docs-prod.azurewebsites.net/colibri/index.html | https://dbt-docs-stg.azurewebsites.net/colibri/index.html |
+| Elementary | https://dbt-docs-prod.azurewebsites.net/elementary/elementary_report.html | https://dbt-docs-stg.azurewebsites.net/elementary/elementary_report.html |
+
+Production is refreshed by every production run (merge, daily 10:00 UTC, manual), staging by every staging deploy. The site root (`/`) has no page of its own; open a report link.
+
+Only people in our Microsoft Entra tenant can open it. The first visit asks you to sign in with your work account and to allow "Sign you in and read your profile"; after that the browser remembers you.
+
+How it gets there, in the `publish-adls` job of [`_dbt.yml`](.github/workflows/_dbt.yml):
+
+```
+dbt job ──artifacts──► publish-adls ──upload_adls──► fountain<stg|prod>storage / dbt / docs/{dbt,docglow,colibri,elementary}/
+                                    └─deploy_docs_site─► download docs/ from ADLS ──zip deploy──► dbt-docs-<stg|prod>
+```
+
+- The site is rebuilt from ADLS, not only from this run, so if a run doesn't produce one report, the last version of it stays online.
+- The site, its sign-in and the deploy permission are managed in [fountainspace/infra](https://github.com/fountainspace/infra): `terraform/teams/data-engineering/docs_site/dbt` and `deploy_docs_sites` in `terraform/repositories/cdc_modelling`. See its `modules/docs-site` README for limits (Free tier: sleeps when idle, so the first visit can take a few seconds).
+- **Why not open the files in storage directly?** A blob URL such as `https://fountainprodstorage.blob.core.windows.net/dbt/docs/dbt/static_index.html` can't ask the browser to sign in, and the storage account doesn't allow anonymous access, so it fails with `PublicAccessNotPermitted`. With a data role on the account you can still download them: `az storage blob download-batch --account-name fountainprodstorage --source dbt --pattern 'docs/*' --destination ~/dbt-docs --auth-mode login`.
 
 ### Secrets and settings
 
@@ -366,8 +397,10 @@ Configured under **Settings → Secrets and variables → Actions**:
 |---|---|---|
 | `DBX_ID_APPLICATION_ID` | Secret | Databricks service principal client ID (`ci`, `staging`, `production` targets) |
 | `DBX_SECRET` | Secret | Databricks service principal client secret |
+| `AZURE_CLIENT_ID` | Variable, per GitHub Environment (`staging`, `production`) | Azure login (OIDC) in `publish-adls`. The `client_id` of `github-fountainspace-cdc_modelling-<env>` from fountainspace/infra |
+| `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | Variable (org) | Azure login (OIDC) |
 
-The workflows use the built-in `GITHUB_TOKEN` (with `actions: read`) to find and download the production manifest from earlier runs. No other token is needed.
+The workflows use the built-in `GITHUB_TOKEN` (with `actions: read`) to find and download the production manifest from earlier runs, and `id-token: write` to log in to Azure without a stored secret.
 
 The **`deploy-to-staging`** label must exist in the repo for the staging workflow to be usable.
 

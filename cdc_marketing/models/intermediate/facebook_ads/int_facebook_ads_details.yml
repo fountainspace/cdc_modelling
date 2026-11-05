@@ -30,6 +30,8 @@ models:
 
       - name: account_name
         description: "{{ doc('account_name') }}"
+        databricks_tags:
+          pii: "true"
 
       - name: channel_name
         description: "{{ doc('channel_name') }}"

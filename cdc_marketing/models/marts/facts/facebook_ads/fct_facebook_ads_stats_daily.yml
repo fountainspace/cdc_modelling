@@ -9,17 +9,25 @@ models:
             - ad_id
             - ad_date
 
-    #config:
+    config:
+      databricks_tags:
+        source: facebook_ads
+        model_type: fact
+        grain: ad_day
     #  contract:
     #    enforced: true
 
     columns:
       - name: ad_id
         description: "{{ doc('ad_id') }}"
+        databricks_tags:
+          key: foreign_key
         data_type: string
 
       - name: ad_spend
         description: "{{ doc('ad_spend') }}"
+        databricks_tags:
+          metric: currency
 
       - name: ad_impressions
         description: "{{ doc('ad_impressions') }}"
@@ -29,3 +37,5 @@ models:
 
       - name: ad_date
         description: "{{ doc('ad_date') }}"
+        databricks_tags:
+          key: event_date

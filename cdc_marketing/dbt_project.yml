@@ -36,17 +36,31 @@ models:
       relation: true
       columns: true
 
+    # Unity Catalog tags, shown on the table's Overview tab in Databricks.
+    # databricks_tags merge: tags set here, on a folder and on a model all add up.
+    # Column tags go on the column in the model's .yml (key `databricks_tags`).
+    +databricks_tags:
+      managed_by: dbt
+      dbt_project: cdc_marketing
+      domain: marketing
+
     # Config indicated by + and applies to all files under models/example/
     staging:
+      +databricks_tags:
+        layer: staging
       +catalog: "{{ 'silver_production' if (target.name == 'production') else 'silver_staging' if (target.name == 'staging') else target.catalog }}"
       +schema: staging
 
     intermediate:
+      +databricks_tags:
+        layer: intermediate
       +materialized: table
       +catalog: "{{ 'silver_production' if (target.name == 'production') else 'silver_staging' if (target.name == 'staging') else target.catalog }}"
       +schema: preparation
 
     marts:
+      +databricks_tags:
+        layer: marts
       +materialized: table
       +catalog: "{{ 'gold_production' if (target.name == 'production') else 'gold_staging' if (target.name == 'staging') else target.catalog }}"
       +schema: marketing_spend

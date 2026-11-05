@@ -421,4 +421,8 @@ The **`deploy-to-staging`** label must exist in the repo for the staging workflo
 - **Microbatch models** (e.g. `fct_facebook_ads_stats_daily`):
   - `materialized='table' if flags.FULL_REFRESH else 'incremental'`: a full refresh rebuilds the table in one query instead of one query per batch.
   - `begin` is the real start date only on `production`. Everywhere else it's *now*, so CI and dev only build the latest batch instead of backfilling all history.
+- **Unity Catalog tags** (`databricks_tags`), shown on the table and column in Databricks Catalog Explorer:
+  - Table tags: shared ones (`managed_by`, `dbt_project`, `domain`, `layer`) are set per folder in [`dbt_project.yml`](cdc_marketing/dbt_project.yml); add model-specific ones under `config: databricks_tags:` in the model's `.yml`. They merge, so a model only lists its own.
+  - Column tags: add `databricks_tags:` on the column in the model's `.yml`. Tag columns holding personal data with `pii: "true"` in every model that exposes them.
+  - Tag values must be strings, so quote `"true"`/numbers. Applying tags needs the `APPLY TAG` privilege on the target catalog/schema.
 - **Dev row limit:** add `{{ add_rows_limit() }}` to staging models so `dev`/`ci` runs work on at most 1000 rows.

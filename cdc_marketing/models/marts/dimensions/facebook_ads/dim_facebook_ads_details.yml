@@ -3,13 +3,19 @@ version: 2
 models:
   - name: dim_facebook_ads_details
     description: "Ad details across all sources"
-    #config:
+    config:
+      databricks_tags:
+        source: facebook_ads
+        model_type: dimension
+        grain: ad
     #  contract:
     #    enforced: true
 
     columns:
       - name: ad_id
         description: "{{ doc('ad_id') }}"
+        databricks_tags:
+          key: primary_key
         data_type: string
         data_tests:
           - not_null
@@ -20,9 +26,13 @@ models:
 
       - name: campaign_id
         description: "{{ doc('campaign_id') }}"
+        databricks_tags:
+          key: foreign_key
 
       - name: account_id
         description: "{{ doc('account_id') }}"
+        databricks_tags:
+          key: foreign_key
 
       - name: ad_name
         description: "{{ doc('ad_name') }}"
@@ -35,6 +45,8 @@ models:
 
       - name: account_name
         description: "{{ doc('account_name') }}"
+        databricks_tags:
+          pii: "true"
 
       - name: channel_name
         description: "{{ doc('channel_name') }}"

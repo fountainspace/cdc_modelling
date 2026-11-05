@@ -14,6 +14,8 @@ models:
 
       - name: account_name
         description: "{{ doc('account_name') }}"
+        databricks_tags:
+          pii: "true"
 
       - name: ad_currency_code
         description: "{{ doc('ad_currency_code') }}"

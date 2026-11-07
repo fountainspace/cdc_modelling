@@ -49,7 +49,7 @@ models:
           ## user defined tag
           pii: "true"
           ##system tag
-          name: ""
+          class.name: ""
 
       - name: channel_name
         description: "{{ doc('channel_name') }}"

@@ -46,7 +46,10 @@ models:
       - name: account_name
         description: "{{ doc('account_name') }}"
         databricks_tags:
+          ## user defined tag
           pii: "true"
+          ##system tag
+          name: ""
 
       - name: channel_name
         description: "{{ doc('channel_name') }}"
